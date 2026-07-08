@@ -65,9 +65,6 @@ spec2web/
   scripts/
     init-state.py
     check-state.py
-
-tests/
-  test_spec2web_state_scripts.py
 ```
 
 ## 安装
@@ -227,10 +224,14 @@ V1 不提供自动 worker 池，也不提供无人值守的批量合并调度器
 
 ## 验证
 
-运行测试：
+运行状态脚本 smoke check：
 
 ```powershell
-python -m unittest discover -s tests -p test_spec2web_state_scripts.py -v
+$tmp = Join-Path $env:TEMP "spec2web-smoke"
+Remove-Item -Recurse -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+python spec2web/scripts/init-state.py --target $tmp
+python spec2web/scripts/check-state.py --target $tmp
 ```
 
 校验 Skill 包：

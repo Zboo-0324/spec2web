@@ -65,9 +65,6 @@ spec2web/
   scripts/
     init-state.py
     check-state.py
-
-tests/
-  test_spec2web_state_scripts.py
 ```
 
 ## Install
@@ -227,10 +224,14 @@ V1 does not provide an automatic worker pool or unattended merge scheduler.
 
 ## Validation
 
-Run the repository tests:
+Run a state script smoke check:
 
 ```powershell
-python -m unittest discover -s tests -p test_spec2web_state_scripts.py -v
+$tmp = Join-Path $env:TEMP "spec2web-smoke"
+Remove-Item -Recurse -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+python spec2web/scripts/init-state.py --target $tmp
+python spec2web/scripts/check-state.py --target $tmp
 ```
 
 Validate the Skill package:
