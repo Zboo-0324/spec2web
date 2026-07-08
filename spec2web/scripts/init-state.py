@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Initialize lightweight Spec2Web state files."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+
+TEMPLATES = {
+    "project-rules.md": """# Project Rules
+
+## Sources Read
+
+- [ ] CLAUDE.md
+- [ ] AGENTS.md
+- [ ] GEMINI.md
+- [ ] README.md
+
+## Active Rules
+
+- Read existing code before writing.
+- State assumptions before implementation.
+- Keep changes small and focused.
+- Verify before claiming completion.
+- Avoid new dependencies unless justified.
+
+## Open Rule Conflicts
+
+- None.
+""",
+    "requirements-baseline.md": """# Requirements Baseline
+
+## Status
+
+status: draft
+
+## Requirements
+
+| ID | Requirement | Priority | Acceptance Signal |
+|---|---|---|---|
+| REQ-001 | Replace with the first confirmed requirement. | Must | Replace with verification method. |
+
+## Assumptions
+
+- None recorded yet.
+
+## Open Questions
+
+- None recorded yet.
+""",
+    "system-design.md": """# System Design
+
+## Pages
+
+- None recorded yet.
+
+## Data Model
+
+- None recorded yet.
+
+## API Contract
+
+- None recorded yet.
+
+## Permissions
+
+- None recorded yet.
+
+## Verification Strategy
+
+- Build command: not recorded
+- Test command: not recorded
+- Browser or manual verification: not recorded
+""",
+    "task-plan.md": """# Task Plan
+
+## Current Strategy
+
+Default to one task at a time. Use controlled multi-worker mode only for no-conflict tasks.
+
+## Tasks
+
+### TASK-001: Replace with first task title
+
+- requirement_ids: REQ-001
+- goal: Replace with one concrete outcome.
+- dependencies: none
+- allowed_paths:
+  - replace/with/path
+- expected_outputs:
+  - replace with expected output
+- verification:
+  - replace with exact command or manual check
+- completion_criteria:
+  - replace with observable condition
+- risks_or_blockers:
+  - none
+- execution_workspace: main
+- parallel_group: none
+- merge_policy: orchestrator_review_then_serial_merge
+""",
+    "loop-state.md": """# Loop State
+
+workflow: spec2web
+status: active
+current_phase: project_rules
+current_task: null
+active_parallel_group: null
+
+## Active Constraints
+
+- one task per worker
+- no unplanned full-project generation
+- every task maps to requirements
+- update state before moving on
+- verify before claiming done
+- follow project-rules.md
+- Orchestrator controls merges
+
+## Worktrees
+
+| Task | Branch | Path | Status |
+|---|---|---|---|
+
+## Next Step
+
+Read project rules and update project-rules.md.
+""",
+    "validation-log.md": """# Validation Log
+
+## Entries
+
+No validation has been recorded yet.
+""",
+    "delivery-report.md": """# Delivery Report
+
+## Completed
+
+- Nothing delivered yet.
+
+## Validation
+
+- No validation recorded yet.
+
+## Run Instructions
+
+- Not recorded yet.
+
+## Known Risks
+
+- None recorded yet.
+
+## Not Completed
+
+- Work has not started.
+""",
+}
+
+
+def initialize(target: Path) -> tuple[list[Path], list[Path]]:
+    state_dir = target / "spec2web"
+    state_dir.mkdir(parents=True, exist_ok=True)
+
+    created: list[Path] = []
+    skipped: list[Path] = []
+
+    for filename, content in TEMPLATES.items():
+        path = state_dir / filename
+        if path.exists():
+            skipped.append(path)
+            continue
+        path.write_text(content, encoding="utf-8", newline="\n")
+        created.append(path)
+
+    return created, skipped
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Initialize Spec2Web state files.")
+    parser.add_argument(
+        "--target",
+        default=".",
+        help="Project directory where the spec2web state folder should be created.",
+    )
+    args = parser.parse_args()
+
+    target = Path(args.target).resolve()
+    created, skipped = initialize(target)
+
+    print(f"Spec2Web state directory: {target / 'spec2web'}")
+    for path in created:
+        print(f"created: {path}")
+    for path in skipped:
+        print(f"exists:  {path}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

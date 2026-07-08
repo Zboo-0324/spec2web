@@ -1,0 +1,224 @@
+# State Files
+
+Spec2Web stores project memory in `spec2web/`. These files are the source of truth after initialization.
+
+## Required Files
+
+```text
+spec2web/
+├── project-rules.md
+├── requirements-baseline.md
+├── system-design.md
+├── task-plan.md
+├── loop-state.md
+├── validation-log.md
+└── delivery-report.md
+```
+
+## project-rules.md
+
+Purpose: summarize implementation-relevant instructions from `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, README, and user-provided rules.
+
+Template:
+
+```markdown
+# Project Rules
+
+## Sources Read
+
+- [ ] CLAUDE.md
+- [ ] AGENTS.md
+- [ ] GEMINI.md
+- [ ] README.md
+
+## Active Rules
+
+- Read existing code before writing.
+- State assumptions before implementation.
+- Keep changes small and focused.
+- Verify before claiming completion.
+- Avoid new dependencies unless justified.
+
+## Open Rule Conflicts
+
+- None.
+```
+
+## requirements-baseline.md
+
+Purpose: hold confirmed requirements. Do not change without user approval.
+
+Template:
+
+```markdown
+# Requirements Baseline
+
+## Status
+
+status: draft
+
+## Requirements
+
+| ID | Requirement | Priority | Acceptance Signal |
+|---|---|---|---|
+| REQ-001 | Describe the first confirmed requirement. | Must | How it will be verified. |
+
+## Assumptions
+
+- List explicit assumptions.
+
+## Open Questions
+
+- List questions that block safe implementation.
+```
+
+## system-design.md
+
+Purpose: freeze design facts before task execution.
+
+Template:
+
+```markdown
+# System Design
+
+## Pages
+
+- Page name: purpose, key actions, requirement IDs.
+
+## Data Model
+
+- Entity: fields, relationships, validation.
+
+## API Contract
+
+- Method path: request, response, errors, requirement IDs.
+
+## Permissions
+
+- Role: allowed actions.
+
+## Verification Strategy
+
+- Build command:
+- Test command:
+- Browser or manual verification:
+```
+
+## task-plan.md
+
+Purpose: list tasks, dependencies, allowed paths, validation, parallel groups, and merge policies.
+
+Template:
+
+```markdown
+# Task Plan
+
+## Current Strategy
+
+Default to one task at a time. Use controlled multi-worker mode only for no-conflict tasks.
+
+## Tasks
+
+### TASK-001: Task title
+
+- requirement_ids: REQ-001
+- goal: Specific result.
+- dependencies: none
+- allowed_paths:
+  - path/pattern
+- expected_outputs:
+  - path or behavior
+- verification:
+  - exact command or manual check
+- completion_criteria:
+  - observable condition
+- risks_or_blockers:
+  - none
+- execution_workspace: main or worktree
+- parallel_group: none
+- merge_policy: orchestrator_review_then_serial_merge
+```
+
+## loop-state.md
+
+Purpose: record current workflow status and active constraints.
+
+Template:
+
+```markdown
+# Loop State
+
+workflow: spec2web
+status: active
+current_phase: project_rules
+current_task: null
+active_parallel_group: null
+
+## Active Constraints
+
+- one task per worker
+- no unplanned full-project generation
+- every task maps to requirements
+- update state before moving on
+- verify before claiming done
+- follow project-rules.md
+- Orchestrator controls merges
+
+## Worktrees
+
+| Task | Branch | Path | Status |
+|---|---|---|---|
+
+## Next Step
+
+Read project rules and update project-rules.md.
+```
+
+## validation-log.md
+
+Purpose: preserve verification evidence.
+
+Template:
+
+```markdown
+# Validation Log
+
+## Entries
+
+### YYYY-MM-DD HH:MM - TASK-001
+
+- command: exact command
+- result: passed or failed
+- evidence: summary of output
+- next_action: continue, repair, blocked
+```
+
+## delivery-report.md
+
+Purpose: final user-facing handoff.
+
+Template:
+
+```markdown
+# Delivery Report
+
+## Completed
+
+- List completed user-facing features.
+
+## Validation
+
+- List commands and outcomes.
+
+## Run Instructions
+
+- Exact local run steps.
+
+## Known Risks
+
+- List risks or limitations.
+
+## Not Completed
+
+- List intentional omissions or blockers.
+```

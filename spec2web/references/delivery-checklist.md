@@ -1,0 +1,54 @@
+# Delivery Checklist
+
+Before final delivery, verify and record evidence.
+
+## Required Checks
+
+- requirements are mapped to tasks
+- all tasks are complete or explicitly listed as not completed
+- validation commands have been run
+- failures are resolved or documented
+- project run instructions are current
+- known risks are documented
+- credentials are not committed
+- local absolute paths are not embedded in deliverables
+
+## Delivery Report Template
+
+````markdown
+# Delivery Report
+
+## Summary
+
+One paragraph describing what was delivered.
+
+## Completed Features
+
+- Feature mapped to requirement ID.
+
+## Validation Evidence
+
+| Check | Command or Method | Result |
+|---|---|---|
+| Build | command | passed/failed |
+| Tests | command | passed/failed |
+| Manual flow | method | passed/failed |
+
+## Run Instructions
+
+```text
+exact commands
+```
+
+## Known Risks
+
+- Risk and impact.
+
+## Not Completed
+
+- Item and reason.
+
+## Resume Instructions
+
+- Next recommended task or follow-up.
+````

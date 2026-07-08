@@ -1,0 +1,7 @@
+interface:
+  display_name: "Spec2Web"
+  short_description: "Guide full-stack web delivery with stateful loops."
+  default_prompt: "Use $spec2web to initialize or continue a full-stack web project workflow."
+
+policy:
+  allow_implicit_invocation: true
