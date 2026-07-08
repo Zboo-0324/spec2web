@@ -1,37 +1,51 @@
 # Spec2Web
 
-Spec2Web is a lightweight Skill for guiding AI coding agents through full-stack web project delivery.
+<div align="center">
 
-It is intentionally not a runtime, code generator, MCP server, background scheduler, or framework template. Instead, Spec2Web gives an agent a stateful workflow for moving from requirements to implementation, validation, repair, and delivery while keeping scope, quality, and project memory explicit.
+**面向 AI 编程智能体的全栈 Web 交付 Workflow Skill**
 
-## What It Does
+需求基线 · 技术栈推荐 · 界面设计基线 · 任务拆解 · Loop Engineering · Worktree 隔离 · 验证交付
 
-Spec2Web helps an agent:
+![skill](https://img.shields.io/badge/skill-spec2web-blue)
+![install](https://img.shields.io/badge/install-Codex%20%7C%20Claude%20Code%20%7C%20Hermes-black)
+![language](https://img.shields.io/badge/language-%E4%B8%AD%E6%96%87%20%7C%20English-blue)
 
-- read project rules before implementation
-- establish a requirements baseline
-- recommend and record a technology strategy
-- define an interface design baseline before frontend work
-- produce a system design
-- break work into bounded tasks
-- execute tasks through a loop of plan, act, verify, review, repair, and record
-- optionally isolate work with Git worktrees
-- continue ready tasks until blocked or delivered
-- record validation evidence and delivery notes
+中文 | [English](./README_EN.md)
 
-## What It Does Not Do
+</div>
 
-Spec2Web V1 does not:
+Spec2Web 是一个轻量级 Skill，用来指导 AI 编程智能体完成全栈 Web 项目的交付流程。
 
-- generate an application from a prompt
-- provide a full-stack code template
-- run as a background service
-- schedule workers automatically
-- provide an MCP server or global CLI
-- deploy applications
-- replace user confirmation for high-impact decisions
+它不是运行时、代码生成器、MCP Server、后台调度器或项目模板。Spec2Web 的重点是给智能体一套可恢复、可审查、可验证的工作流，让它从需求出发，逐步完成设计、拆解、开发、验证、修复和交付，同时保持方向、边界和项目记忆。
 
-## Repository Layout
+## 它能做什么
+
+Spec2Web 会帮助智能体：
+
+- 在实现前读取项目规则
+- 建立需求基线
+- 推荐并记录技术栈策略
+- 在前端开发前定义界面设计基线
+- 产出系统设计
+- 将工作拆解成有边界的小任务
+- 通过计划、实现、验证、审查、修复、记录的循环推进任务
+- 可选使用 Git worktree 隔离开发任务
+- 在任务完成后继续推进下一个 ready task，直到阻塞或交付
+- 记录验证证据和交付说明
+
+## 它不做什么
+
+Spec2Web V1 不会：
+
+- 根据一句提示生成完整应用
+- 提供全栈代码模板
+- 作为后台服务运行
+- 自动调度 worker 池
+- 提供 MCP Server 或全局 CLI
+- 自动部署应用
+- 替代用户对高影响决策的确认
+
+## 仓库结构
 
 ```text
 spec2web/
@@ -56,9 +70,9 @@ tests/
   test_spec2web_state_scripts.py
 ```
 
-## Install
+## 安装
 
-Install the whole `spec2web/` folder, not only `SKILL.md`.
+请安装整个 `spec2web/` 文件夹，而不是只复制 `SKILL.md`。
 
 ### Codex
 
@@ -73,7 +87,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
 ```
 
-Restart Codex after installation.
+安装后重启 Codex。
 
 ### Claude Code
 
@@ -88,7 +102,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
 ```
 
-Restart Claude Code after installation.
+安装后重启 Claude Code。
 
 ### Hermes
 
@@ -103,11 +117,11 @@ New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
 ```
 
-Restart Hermes after installation.
+安装后重启 Hermes。
 
-## Usage
+## 使用方式
 
-Use Spec2Web explicitly when you want the workflow active:
+当你希望启用 Spec2Web 工作流时，显式调用它：
 
 ```text
 /spec2web initialize this project
@@ -118,7 +132,7 @@ Use Spec2Web explicitly when you want the workflow active:
 /spec2web generate delivery report
 ```
 
-Natural-language equivalents also work:
+也可以用自然语言：
 
 ```text
 use Spec2Web for this project
@@ -126,11 +140,11 @@ start Spec2Web mode
 resume Spec2Web
 ```
 
-Spec2Web should not take over ordinary coding tasks unless it has been explicitly requested or the project has an active `spec2web/loop-state.md`.
+Spec2Web 不应该自动接管普通编码任务。只有当用户显式要求，或项目中存在 active 的 `spec2web/loop-state.md` 时，它才持续约束后续全栈开发工作。
 
-## Project State
+## 项目状态文件
 
-When initialized inside a project, Spec2Web creates:
+在项目中初始化后，Spec2Web 会创建：
 
 ```text
 spec2web/
@@ -143,33 +157,33 @@ spec2web/
   delivery-report.md
 ```
 
-These files are the source of truth. Conversation context does not replace them.
+这些文件是项目记忆的事实来源。对话上下文不能替代它们。
 
-## State Scripts
+## 状态脚本
 
-Initialize state files:
+初始化状态文件：
 
 ```powershell
 python spec2web/scripts/init-state.py --target .
 ```
 
-Check state files:
+检查状态文件：
 
 ```powershell
 python spec2web/scripts/check-state.py --target .
 ```
 
-The checker validates required state files and key markers, including:
+检查脚本会验证必要状态文件和关键标记，包括：
 
-- workflow status
-- task-plan fields
-- technology strategy
-- interface design baseline
-- continuation constraints
+- workflow 状态
+- task-plan 字段
+- 技术栈策略
+- 界面设计基线
+- 连续执行约束
 
-## Workflow
+## 工作流
 
-The top-level workflow is:
+顶层工作流：
 
 ```text
 Project Rules
@@ -183,7 +197,7 @@ Project Rules
 -> Delivery
 ```
 
-Each task loop is:
+单个任务循环：
 
 ```text
 Read State
@@ -197,51 +211,51 @@ Read State
 -> Update State
 ```
 
-After one task completes, the Orchestrator continues to the next ready task when `loop-state.md` is active and no stop condition applies.
+一个任务完成后，只要 `loop-state.md` 仍为 active，且下一个任务依赖满足、验证方法明确、没有停止条件，Orchestrator 就继续推进下一个任务。
 
-## Worktree Mode
+## Worktree 模式
 
-Spec2Web supports optional Git worktree isolation:
+Spec2Web 支持可选的 Git worktree 隔离：
 
-- default: one task at a time
-- controlled multi-worker mode: only for no-conflict task batches
-- workers never merge their own work
-- the Orchestrator merges serially
-- verification runs after each merge
+- 默认一次执行一个任务
+- 受控多 worker 模式只允许无冲突任务批次
+- worker 不允许合并自己的工作
+- Orchestrator 串行合并
+- 每次合并后都需要重新验证
 
-V1 does not provide an automatic worker pool or unattended merge scheduler.
+V1 不提供自动 worker 池，也不提供无人值守的批量合并调度器。
 
-## Validation
+## 验证
 
-Run the repository tests:
+运行测试：
 
 ```powershell
 python -m unittest discover -s tests -p test_spec2web_state_scripts.py -v
 ```
 
-Validate the Skill package:
+校验 Skill 包：
 
 ```powershell
 python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" spec2web
 ```
 
-## Design Principles
+## 设计原则
 
-- Keep V1 lightweight.
-- Use explicit state files as project memory.
-- Split large work into bounded tasks.
-- Require verification before completion claims.
-- Separate maker and checker roles.
-- Prefer existing project conventions.
-- Ask the user before changing confirmed requirements, adding high-risk dependencies, using credentials, or consuming paid resources.
+- V1 保持轻量。
+- 用显式状态文件作为项目记忆。
+- 将大任务拆成有边界的小任务。
+- 声称完成前必须验证。
+- 分离 Maker 和 Checker 角色。
+- 优先沿用现有项目约定。
+- 改变已确认需求、增加高风险依赖、使用凭证或消耗付费资源前，必须询问用户。
 
-## Roadmap
+## 路线图
 
-Potential V2 additions:
+V2 可以考虑：
 
-- richer distribution packaging for Codex, Claude Code, and Hermes
-- optional global CLI
-- stronger validators
-- automatic worktree pool and conflict analysis
-- example projects
-- marketplace or hub distribution metadata
+- 更完整的 Codex、Claude Code、Hermes 分发打包
+- 可选全局 CLI
+- 更强的状态验证器
+- 自动 worktree 池和冲突分析
+- 示例项目
+- marketplace 或 hub 分发元数据
