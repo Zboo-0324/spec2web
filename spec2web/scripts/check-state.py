@@ -19,9 +19,12 @@ REQUIRED_FILES = [
 
 TASK_PLAN_MARKERS = [
     "requirement_ids:",
+    "status:",
     "allowed_paths:",
     "verification:",
     "completion_criteria:",
+    "acceptance_gate:",
+    "submission_package:",
     "merge_policy:",
 ]
 
@@ -31,6 +34,7 @@ LOOP_STATE_MARKERS = [
     "current_phase:",
     "## Active Constraints",
     "continue ready tasks until blocked or delivered",
+    "delegated workers submit, Orchestrator accepts",
 ]
 
 SYSTEM_DESIGN_MARKERS = [

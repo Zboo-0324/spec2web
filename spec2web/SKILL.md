@@ -34,12 +34,14 @@ Do not write application code until all of these exist:
 - `spec2web/task-plan.md`
 - `spec2web/loop-state.md`
 
-Do not mark a task complete until:
+Do not accept or mark a task complete until:
 
 - the task maps to requirement IDs,
 - the task has a clear verification method,
+- the Developer has submitted an implementation summary and evidence package,
 - verification results are recorded in `spec2web/validation-log.md`,
 - Reviewer has checked scope, quality, and workflow compliance,
+- Orchestrator has run the task acceptance gate and chosen accept, repair, or block,
 - `spec2web/loop-state.md` is updated.
 
 ## Workflow
@@ -63,16 +65,27 @@ Read State
 -> Select Next Task or Parallel Batch
 -> Prepare Worktree(s) when enabled
 -> Plan
--> Act
--> Verify
--> Review
+-> Delegate or Execute Bounded Task
+-> Worker Submission
+-> Test and Review
+-> Orchestrator Acceptance
 -> Serial Merge or Repair or Record
 -> Update State
 ```
 
+## Orchestration Policy
+
+The main session stays Orchestrator. It owns state, task selection, delegation, acceptance, merge decisions, and continuation.
+
+Prefer host-provided subagents or subsessions for Developer, Tester, Reviewer, and Repairer roles. Do not call external AI services or remote agent products to satisfy this policy.
+
+Use single-session role switching only when subagents are unavailable, the task is too coupled to split safely, or the task is small enough that delegation overhead would exceed the work. Record the fallback reason in `loop-state.md`.
+
+Workers submit work for acceptance; they do not decide completion. A Developer may move a task to `submitted_for_acceptance`. Only Orchestrator may mark it `accepted`, `merged`, `complete`, `blocked`, or `needs_repair`.
+
 ## Continuation Policy
 
-After a task is completed and state is updated, continue automatically when another task is ready.
+After Orchestrator marks a task complete and state is updated, continue automatically when another task is ready.
 
 Continue only when:
 
@@ -140,10 +153,13 @@ Every task must have:
 - `requirement_ids`
 - `goal`
 - `dependencies`
+- `status`
 - `allowed_paths`
 - `expected_outputs`
 - `verification`
 - `completion_criteria`
+- `acceptance_gate`
+- `submission_package`
 - `risks_or_blockers`
 - `execution_workspace`
 - `parallel_group`
@@ -153,7 +169,7 @@ For task rules and templates, read `references/task-breakdown.md`.
 
 ## Roles
 
-Use role separation even when only one agent is available:
+Use role separation with Orchestrator as the fixed main-session role:
 
 - Orchestrator maintains state, selects tasks, chooses safe parallel batches, and controls merges.
 - Planner analyzes requirements, designs the system, and decomposes tasks.
@@ -163,7 +179,7 @@ Use role separation even when only one agent is available:
 - Repairer fixes failures using explicit evidence.
 - Delivery prepares final reporting.
 
-When subagents are available, use separate agents for Developer, Tester, and Reviewer. When they are not available, explicitly switch roles. Developer may not self-certify completion.
+When subagents are available, delegate Developer, Tester, Reviewer, and Repairer roles. When they are not available, explicitly switch roles and record the fallback reason. Developer may not self-certify completion or merge.
 
 For detailed role rules, read `references/role-protocol.md`.
 
@@ -182,7 +198,7 @@ Parallel tasks must satisfy:
 - each task uses an independent worktree,
 - Orchestrator records the batch in `loop-state.md`.
 
-Even when development is parallel, merges are serial. Each merge requires diff review, task verification, main-workspace verification, and state updates.
+Even when development is parallel, merges are serial. Each merge requires worker submission, Tester evidence, Reviewer approval, Orchestrator acceptance, main-workspace verification, and state updates.
 
 For worktree details, read `references/worktree-mode.md`.
 

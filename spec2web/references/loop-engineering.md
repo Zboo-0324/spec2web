@@ -6,15 +6,18 @@ Spec2Web uses Loop Engineering as a workflow discipline, not as a background run
 
 Spec2Web owns the loop. Other tools, Skills, subagents, and shell commands can assist a step, but they do not own the project state or decide that the project is complete.
 
+The main session stays Orchestrator. Developer, Tester, Reviewer, and Repairer should be delegated to host-provided subagents or subsessions when available. If delegation is not available, too coupled, or too small to justify, explicitly switch roles in the main session and record the fallback reason in `loop-state.md`.
+
 Every loop follows:
 
 ```text
 Read State
 -> Select Bounded Work
 -> Plan
--> Act
--> Verify
--> Review
+-> Delegate or Execute Bounded Task
+-> Worker Submission
+-> Test and Review
+-> Orchestrator Acceptance
 -> Repair or Record
 -> Update State
 ```
@@ -45,6 +48,8 @@ Each worker gets one task with:
 - expected outputs
 - verification
 - completion criteria
+- acceptance gate
+- submission package
 - repair budget
 - merge policy
 
@@ -52,18 +57,35 @@ If the work cannot be bounded, split it before implementation.
 
 ## Maker and Checker Split
 
-The Developer creates changes. The Tester and Reviewer check them.
+The Developer creates changes. The Tester and Reviewer check them. Orchestrator accepts or rejects them.
 
-Developer must not self-certify completion. Reviewer is read-only and checks:
+Developer must not self-certify completion. Developer may only submit `submitted_for_acceptance` with an implementation summary, changed files, verification evidence, and known risks.
+
+Reviewer is read-only and checks:
 
 - requirement mapping
 - scope boundaries
 - project rules
 - validation evidence
+- acceptance gate readiness
 - worktree and merge protocol
 - unplanned functionality
 
 Tester records verification evidence in `validation-log.md`.
+
+## Acceptance Ownership
+
+Workers submit evidence; Orchestrator decides state.
+
+Only Orchestrator may set a task to:
+
+- `accepted`
+- `merged`
+- `complete`
+- `needs_repair`
+- `blocked`
+
+Before acceptance, Orchestrator must check the submission package, Tester evidence, Reviewer recommendation, and task `acceptance_gate`. After merge, Orchestrator runs the required main-workspace verification before marking the task complete.
 
 ## Worktree Isolation
 
@@ -111,12 +133,12 @@ If state is not updated, the loop is not complete.
 
 ## Continuation Policy
 
-After a task is completed, the Orchestrator should continue to the next ready task instead of stopping by default.
+After Orchestrator marks a task complete, it should continue to the next ready task instead of stopping by default.
 
 Continue automatically when:
 
 - `loop-state.md` has `status: active`
-- the current task passed verification and review
+- the current task passed verification, review, acceptance, and any required post-merge verification
 - state files have been updated
 - another task has complete dependencies
 - the next task has requirement IDs, allowed paths, and verification
@@ -131,14 +153,17 @@ Stop and ask the user when:
 - credentials, paid resources, or unsafe operations are needed
 - the next task would exceed the current project scope
 
-When all tasks are complete, move to Integration Validation and Delivery.
+When all tasks are Orchestrator-complete, move to Integration Validation and Delivery.
 
 ## Completion Rule
 
-Completion is not a claim. Completion requires:
+Completion is not a claim and not a worker decision. Completion requires:
 
 - all completed tasks mapped to requirements
+- Developer submission package recorded
 - verification evidence recorded
 - Reviewer sign-off or documented exceptions
+- Orchestrator acceptance recorded
 - main workspace validation after merges
+- task state updated to `complete`
 - `delivery-report.md` generated

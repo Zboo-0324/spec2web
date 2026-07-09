@@ -42,6 +42,7 @@ Each task must include:
 - requirement_ids: REQ-000
 - goal: One concrete outcome.
 - dependencies: TASK-000 or none
+- status: pending
 - allowed_paths:
   - path/pattern
 - expected_outputs:
@@ -49,13 +50,47 @@ Each task must include:
 - verification:
   - exact command or manual check
 - completion_criteria:
-  - observable condition
+  - worker-observable condition for submitting the task
+- acceptance_gate:
+  - Orchestrator check required before accepting or merging
+- submission_package:
+  - implementation summary
+  - changed files
+  - verification evidence
+  - known risks or follow-up
 - risks_or_blockers:
   - none
 - execution_workspace: main or worktree
 - parallel_group: none or PG-000
 - merge_policy: orchestrator_review_then_serial_merge
 ```
+
+## Completion vs Acceptance
+
+`completion_criteria` describes when a worker can submit the task for acceptance. It is not permission to mark the task complete.
+
+Use these status values:
+
+- `pending`: task is ready or waiting on dependencies.
+- `in_progress`: a worker is executing the task.
+- `submitted_for_acceptance`: Developer has submitted the task package.
+- `needs_repair`: Orchestrator or Reviewer rejected the submission with evidence.
+- `accepted`: Orchestrator accepted the task before merge.
+- `merged`: Orchestrator merged the accepted task.
+- `complete`: post-merge verification passed and state is updated.
+- `blocked`: task cannot proceed without user input or external change.
+
+Only Orchestrator may set `accepted`, `merged`, or `complete`. Developer, Tester, and Reviewer provide evidence; they do not self-certify completion.
+
+## Acceptance Gate
+
+Each `acceptance_gate` must be specific enough for Orchestrator to decide accept, repair, or block. Include:
+
+- required verification command or manual check,
+- Reviewer scope and quality check,
+- requirement IDs covered,
+- main-workspace verification needed after merge,
+- rejection conditions such as scope drift, missing evidence, conflict, or failed tests.
 
 ## Parallel Eligibility
 

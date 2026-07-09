@@ -5,7 +5,7 @@ Before final delivery, verify and record evidence.
 ## Required Checks
 
 - requirements are mapped to tasks
-- all tasks are complete or explicitly listed as not completed
+- all tasks are marked complete by Orchestrator or explicitly listed as not completed
 - validation commands have been run
 - failures are resolved or documented
 - project run instructions are current

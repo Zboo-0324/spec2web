@@ -188,6 +188,7 @@ Default to one task at a time. Use controlled multi-worker mode only for no-conf
 - requirement_ids: REQ-001
 - goal: Specific result.
 - dependencies: none
+- status: pending
 - allowed_paths:
   - path/pattern
 - expected_outputs:
@@ -195,7 +196,14 @@ Default to one task at a time. Use controlled multi-worker mode only for no-conf
 - verification:
   - exact command or manual check
 - completion_criteria:
-  - observable condition
+  - worker-observable condition for submitting the task
+- acceptance_gate:
+  - Orchestrator check required before accepting or merging
+- submission_package:
+  - implementation summary
+  - changed files
+  - verification evidence
+  - known risks or follow-up
 - risks_or_blockers:
   - none
 - execution_workspace: main or worktree
@@ -222,6 +230,8 @@ active_parallel_group: null
 
 - one task per worker
 - continue ready tasks until blocked or delivered
+- main session remains Orchestrator
+- delegated workers submit, Orchestrator accepts
 - no unplanned full-project generation
 - every task maps to requirements
 - update state before moving on
