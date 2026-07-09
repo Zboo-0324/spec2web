@@ -4,18 +4,19 @@ Spec2Web uses Loop Engineering as a workflow discipline, not as a background run
 
 ## Core Rule
 
-Spec2Web owns the loop. Other tools, Skills, subagents, and shell commands can assist a step, but they do not own the project state or decide that the project is complete.
+Spec2Web owns the loop. Other tools, Skills, subagents, worktrees, pull requests, and shell commands can assist a step, but they do not own the project state or decide that the project is complete.
 
-The main session stays Orchestrator. Developer, Tester, Reviewer, and Repairer should be delegated to host-provided subagents or subsessions when available. If delegation is not available, too coupled, or too small to justify, explicitly switch roles in the main session and record the fallback reason in `loop-state.md`.
+The main session stays Orchestrator. Developer, Tester, Reviewer, and Repairer should be delegated to host-provided subagents or subsessions through PR/worktree handoff when available. Do not call Claude, external AI services, remote agent products, or another model provider. If delegation is not available, too coupled, or too small to justify, explicitly switch roles in the main session and record the fallback reason in `loop-state.md`.
 
 Every loop follows:
 
 ```text
 Read State
 -> Select Bounded Work
--> Plan
--> Delegate or Execute Bounded Task
--> Worker Submission
+-> Create Branch and Worktree
+-> Delegate Worker with Task Contract
+-> Worker Commit on Task Branch
+-> PR Handoff Submission
 -> Test and Review
 -> Orchestrator Acceptance
 -> Repair or Record
@@ -44,6 +45,7 @@ Each worker gets one task with:
 
 - requirement IDs
 - dependencies
+- handoff mode
 - allowed paths
 - expected outputs
 - verification
@@ -59,7 +61,7 @@ If the work cannot be bounded, split it before implementation.
 
 The Developer creates changes. The Tester and Reviewer check them. Orchestrator accepts or rejects them.
 
-Developer must not self-certify completion. Developer may only submit `submitted_for_acceptance` with an implementation summary, changed files, verification evidence, and known risks.
+Developer must not self-certify completion. In PR/worktree mode, Developer works only in the assigned worktree, commits only to the task branch, and may only submit `submitted_for_acceptance` with branch, commit hash, worktree path, implementation summary, changed files, verification evidence, and known risks.
 
 Reviewer is read-only and checks:
 
@@ -85,7 +87,7 @@ Only Orchestrator may set a task to:
 - `needs_repair`
 - `blocked`
 
-Before acceptance, Orchestrator must check the submission package, Tester evidence, Reviewer recommendation, and task `acceptance_gate`. After merge, Orchestrator runs the required main-workspace verification before marking the task complete.
+Before acceptance, Orchestrator must check the submission package, task branch diff, Tester evidence, Reviewer recommendation, and task `acceptance_gate`. After merge, Orchestrator runs the required main-workspace verification before marking the task complete.
 
 ## Worktree Isolation
 

@@ -4,7 +4,7 @@
 
 **面向 AI 编程智能体的全栈 Web 交付 Workflow Skill**
 
-需求基线 · 技术栈推荐 · 界面设计基线 · 任务拆解 · Loop Engineering · Worktree 隔离 · 验证交付
+需求基线 · 技术栈推荐 · 界面设计基线 · 任务拆解 · Loop Engineering · PR/Worktree 交接 · 验证交付
 
 ![skill](https://img.shields.io/badge/skill-spec2web-blue)
 ![install](https://img.shields.io/badge/install-Codex%20%7C%20Claude%20Code%20%7C%20Hermes-black)
@@ -28,8 +28,8 @@ Spec2Web 会帮助智能体：
 - 在前端开发前定义界面设计基线
 - 产出系统设计
 - 将工作拆解成有边界的小任务
-- 通过计划、实现、验证、审查、修复、记录的循环推进任务
-- 可选使用 Git worktree 隔离开发任务
+- 通过 PR/worktree 交接推进任务：Orchestrator 派发，子代理开发提交，Orchestrator 审查测试合并
+- 在 Git 项目中默认使用 task branch 和 worktree 隔离开发任务
 - 在任务完成后继续推进下一个 ready task，直到阻塞或交付
 - 记录验证证据和交付说明
 
@@ -41,6 +41,7 @@ Spec2Web V1 不会：
 - 提供全栈代码模板
 - 作为后台服务运行
 - 自动调度 worker 池
+- 调用 Claude 或外部 AI 服务充当 worker
 - 提供 MCP Server 或全局 CLI
 - 自动部署应用
 - 替代用户对高影响决策的确认
@@ -199,25 +200,28 @@ Project Rules
 ```text
 Read State
 -> Select Next Task or Parallel Batch
--> Prepare Worktree(s) when enabled
--> Plan
--> Act
--> Verify
--> Review
+-> Create Task Branch and Worktree when Git is available
+-> Delegate Worker with Task Contract
+-> Worker Commits to Task Branch
+-> PR Handoff Submission
+-> Test and Review
+-> Orchestrator Acceptance
 -> Serial Merge or Repair or Record
 -> Update State
 ```
 
 一个任务完成后，只要 `loop-state.md` 仍为 active，且下一个任务依赖满足、验证方法明确、没有停止条件，Orchestrator 就继续推进下一个任务。
 
-## Worktree 模式
+## PR/Worktree 模式
 
-Spec2Web 支持可选的 Git worktree 隔离：
+Spec2Web 在 Git 项目中默认使用 PR/worktree 交接：
 
 - 默认一次执行一个任务
 - 受控多 worker 模式只允许无冲突任务批次
-- worker 不允许合并自己的工作
-- Orchestrator 串行合并
+- Orchestrator 创建 task branch 和 worktree
+- 子代理 worker 只在自己的 worktree 中开发并提交到 task branch
+- worker 提交本地 PR 包或远程 PR 后停止
+- Orchestrator 审查、测试、验收并串行合并
 - 每次合并后都需要重新验证
 
 V1 不提供自动 worker 池，也不提供无人值守的批量合并调度器。

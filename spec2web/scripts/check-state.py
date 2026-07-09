@@ -20,6 +20,7 @@ REQUIRED_FILES = [
 TASK_PLAN_MARKERS = [
     "requirement_ids:",
     "status:",
+    "handoff_mode:",
     "allowed_paths:",
     "verification:",
     "completion_criteria:",
@@ -34,7 +35,10 @@ LOOP_STATE_MARKERS = [
     "current_phase:",
     "## Active Constraints",
     "continue ready tasks until blocked or delivered",
+    "implementation tasks use PR/worktree handoff when Git is available",
     "delegated workers submit, Orchestrator accepts",
+    "external AI workers are forbidden",
+    "## PR Handoffs",
 ]
 
 SYSTEM_DESIGN_MARKERS = [

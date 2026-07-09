@@ -4,7 +4,7 @@
 
 **A workflow Skill for full-stack web delivery with AI coding agents**
 
-Requirements baseline · Technology strategy · Interface design · Task breakdown · Loop Engineering · Worktree isolation · Validation
+Requirements baseline · Technology strategy · Interface design · Task breakdown · Loop Engineering · PR/worktree handoff · Validation
 
 ![skill](https://img.shields.io/badge/skill-spec2web-blue)
 ![install](https://img.shields.io/badge/install-Codex%20%7C%20Claude%20Code%20%7C%20Hermes-black)
@@ -28,8 +28,8 @@ Spec2Web helps an agent:
 - define an interface design baseline before frontend work
 - produce a system design
 - break work into bounded tasks
-- execute tasks through a loop of plan, act, verify, review, repair, and record
-- optionally isolate work with Git worktrees
+- execute tasks through PR/worktree handoff: Orchestrator delegates, subagents develop and submit, Orchestrator reviews, tests, and merges
+- default to task branches and worktrees for implementation tasks in Git projects
 - continue ready tasks until blocked or delivered
 - record validation evidence and delivery notes
 
@@ -41,6 +41,7 @@ Spec2Web V1 does not:
 - provide a full-stack code template
 - run as a background service
 - schedule workers automatically
+- call Claude or external AI services as workers
 - provide an MCP server or global CLI
 - deploy applications
 - replace user confirmation for high-impact decisions
@@ -199,25 +200,28 @@ Each task loop is:
 ```text
 Read State
 -> Select Next Task or Parallel Batch
--> Prepare Worktree(s) when enabled
--> Plan
--> Act
--> Verify
--> Review
+-> Create Task Branch and Worktree when Git is available
+-> Delegate Worker with Task Contract
+-> Worker Commits to Task Branch
+-> PR Handoff Submission
+-> Test and Review
+-> Orchestrator Acceptance
 -> Serial Merge or Repair or Record
 -> Update State
 ```
 
 After one task completes, the Orchestrator continues to the next ready task when `loop-state.md` is active and no stop condition applies.
 
-## Worktree Mode
+## PR/Worktree Mode
 
-Spec2Web supports optional Git worktree isolation:
+Spec2Web defaults to PR/worktree handoff in Git projects:
 
 - default: one task at a time
 - controlled multi-worker mode: only for no-conflict task batches
-- workers never merge their own work
-- the Orchestrator merges serially
+- the Orchestrator creates the task branch and worktree
+- subagent workers develop only in their assigned worktree and commit to the task branch
+- workers submit a local PR package or remote PR, then stop
+- the Orchestrator reviews, tests, accepts, and merges serially
 - verification runs after each merge
 
 V1 does not provide an automatic worker pool or unattended merge scheduler.

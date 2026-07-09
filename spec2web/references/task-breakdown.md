@@ -43,6 +43,7 @@ Each task must include:
 - goal: One concrete outcome.
 - dependencies: TASK-000 or none
 - status: pending
+- handoff_mode: pr_worktree
 - allowed_paths:
   - path/pattern
 - expected_outputs:
@@ -54,6 +55,8 @@ Each task must include:
 - acceptance_gate:
   - Orchestrator check required before accepting or merging
 - submission_package:
+  - branch name and commit hash
+  - worktree path
   - implementation summary
   - changed files
   - verification evidence
@@ -81,6 +84,18 @@ Use these status values:
 - `blocked`: task cannot proceed without user input or external change.
 
 Only Orchestrator may set `accepted`, `merged`, or `complete`. Developer, Tester, and Reviewer provide evidence; they do not self-certify completion.
+
+## Handoff Mode
+
+Use `handoff_mode: pr_worktree` for implementation tasks when the project is a Git repository. This means:
+
+- Orchestrator creates the task branch and worktree,
+- Developer works only in that worktree,
+- Developer commits only to the task branch,
+- Developer submits a local or remote PR package,
+- Orchestrator reviews, tests, accepts, and merges.
+
+Use `handoff_mode: single_session` only when subagents are unavailable, the task is too coupled to isolate safely, or the task is small enough that delegation overhead exceeds the work. Record the reason in `loop-state.md`.
 
 ## Acceptance Gate
 

@@ -189,6 +189,7 @@ Default to one task at a time. Use controlled multi-worker mode only for no-conf
 - goal: Specific result.
 - dependencies: none
 - status: pending
+- handoff_mode: pr_worktree
 - allowed_paths:
   - path/pattern
 - expected_outputs:
@@ -200,6 +201,8 @@ Default to one task at a time. Use controlled multi-worker mode only for no-conf
 - acceptance_gate:
   - Orchestrator check required before accepting or merging
 - submission_package:
+  - branch name and commit hash
+  - worktree path
   - implementation summary
   - changed files
   - verification evidence
@@ -231,7 +234,9 @@ active_parallel_group: null
 - one task per worker
 - continue ready tasks until blocked or delivered
 - main session remains Orchestrator
+- implementation tasks use PR/worktree handoff when Git is available
 - delegated workers submit, Orchestrator accepts
+- external AI workers are forbidden
 - no unplanned full-project generation
 - every task maps to requirements
 - update state before moving on
@@ -243,6 +248,11 @@ active_parallel_group: null
 
 | Task | Branch | Path | Status |
 |---|---|---|---|
+
+## PR Handoffs
+
+| Task | Mode | Branch | Worktree | Commit | PR URL | Status |
+|---|---|---|---|---|---|---|
 
 ## Next Step
 

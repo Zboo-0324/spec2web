@@ -1,6 +1,6 @@
 ---
 name: spec2web
-description: Use when the user asks to initialize, enable, start, resume, or run Spec2Web for a web project, or when the current project contains spec2web/loop-state.md with status active. Guides full-stack web delivery through project rules, requirement baseline, technology strategy, interface design, system design, task breakdown, role-separated loops, worktree isolation, validation, repair, and delivery reporting.
+description: Use when the user asks to initialize, enable, start, resume, or run Spec2Web for a web project, or when the current project contains spec2web/loop-state.md with status active. Guides full-stack web delivery through project rules, requirement baseline, technology strategy, interface design, system design, task breakdown, role-separated PR/worktree loops, validation, repair, and delivery reporting.
 ---
 
 # Spec2Web
@@ -38,6 +38,7 @@ Do not accept or mark a task complete until:
 
 - the task maps to requirement IDs,
 - the task has a clear verification method,
+- implementation happened through PR/worktree handoff when Git worktree mode was available,
 - the Developer has submitted an implementation summary and evidence package,
 - verification results are recorded in `spec2web/validation-log.md`,
 - Reviewer has checked scope, quality, and workflow compliance,
@@ -63,10 +64,11 @@ Each task-level loop follows:
 ```text
 Read State
 -> Select Next Task or Parallel Batch
--> Prepare Worktree(s) when enabled
+-> Create Task Branch and Worktree when Git is available
 -> Plan
--> Delegate or Execute Bounded Task
--> Worker Submission
+-> Delegate Worker with Task Contract
+-> Worker Commits to Task Branch
+-> PR Handoff Submission
 -> Test and Review
 -> Orchestrator Acceptance
 -> Serial Merge or Repair or Record
@@ -75,13 +77,19 @@ Read State
 
 ## Orchestration Policy
 
-The main session stays Orchestrator. It owns state, task selection, delegation, acceptance, merge decisions, and continuation.
+The main session stays Orchestrator. It owns state, task selection, PR/worktree setup, delegation, acceptance, merge decisions, and continuation.
 
-Prefer host-provided subagents or subsessions for Developer, Tester, Reviewer, and Repairer roles. Do not call external AI services or remote agent products to satisfy this policy.
+Prefer host-provided subagents or subsessions for Developer, Tester, Reviewer, and Repairer roles. Do not call Claude, external AI services, remote agent products, or another model provider to satisfy this policy.
+
+The old external-agent pattern maps to this local pattern:
+
+```text
+Codex Orchestrator -> host subagent worker -> task worktree/branch -> PR handoff -> Orchestrator review/test/merge
+```
 
 Use single-session role switching only when subagents are unavailable, the task is too coupled to split safely, or the task is small enough that delegation overhead would exceed the work. Record the fallback reason in `loop-state.md`.
 
-Workers submit work for acceptance; they do not decide completion. A Developer may move a task to `submitted_for_acceptance`. Only Orchestrator may mark it `accepted`, `merged`, `complete`, `blocked`, or `needs_repair`.
+Workers submit work for acceptance; they do not decide completion. A Developer may commit only to the assigned task branch and may move a task to `submitted_for_acceptance`. Only Orchestrator may mark it `accepted`, `merged`, `complete`, `blocked`, or `needs_repair`.
 
 ## Continuation Policy
 
@@ -154,6 +162,7 @@ Every task must have:
 - `goal`
 - `dependencies`
 - `status`
+- `handoff_mode`
 - `allowed_paths`
 - `expected_outputs`
 - `verification`
@@ -183,9 +192,9 @@ When subagents are available, delegate Developer, Tester, Reviewer, and Repairer
 
 For detailed role rules, read `references/role-protocol.md`.
 
-## Worktree Mode
+## PR/Worktree Mode
 
-Prefer Git worktree isolation for development tasks when the project is a Git repository. If the project is not a Git repository, ask the user before initializing Git.
+Default to PR/worktree isolation for implementation tasks when the project is a Git repository. If the project is not a Git repository, ask the user before initializing Git.
 
 Default to one task at a time. Controlled multi-worker mode is allowed only when Orchestrator explicitly selects a no-conflict batch from `task-plan.md`.
 
@@ -200,7 +209,7 @@ Parallel tasks must satisfy:
 
 Even when development is parallel, merges are serial. Each merge requires worker submission, Tester evidence, Reviewer approval, Orchestrator acceptance, main-workspace verification, and state updates.
 
-For worktree details, read `references/worktree-mode.md`.
+For PR/worktree handoff details, read `references/worktree-mode.md`.
 
 ## Repair Budget
 
