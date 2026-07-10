@@ -36,7 +36,7 @@ Spec2Web 会帮助智能体：
 
 ## 它不做什么
 
-Spec2Web V1.1 不会：
+Spec2Web 不会：
 
 - 根据一句提示生成完整应用
 - 提供全栈代码模板
@@ -168,7 +168,7 @@ spec2web/
 python spec2web/scripts/init-state.py --target .
 ```
 
-将 V1 状态迁移到 schema 1.1：
+迁移已有状态：
 
 ```powershell
 python spec2web/scripts/migrate-state.py --target . --dry-run
@@ -254,9 +254,9 @@ Spec2Web 对 Git 项目中的委派或并行任务使用 PR/worktree 交接：
 - Orchestrator 通过 `merge`、`squash_merge`、`cherry_pick` 或 `integration_commit` 串行集成
 - 每次集成后都需要在主工作区重新验证
 
-V1.1 不提供自动 worker 池，也不提供无人值守的批量集成调度器。
+Spec2Web 不提供自动 worker 池，也不提供无人值守的批量集成调度器。
 
-V1.1 允许使用当前 Codex 宿主提供的本地或 Codex 云端智能体；未经用户明确授权，不调用第三方 AI 服务或外部智能体产品。
+Spec2Web 允许使用当前 Codex 宿主提供的本地或 Codex 云端智能体；未经用户明确授权，不调用第三方 AI 服务或外部智能体产品。
 
 对于非 Git 项目或明确采用单会话回退的任务，使用 `handoff_mode: single_session` 和 `integration_strategy: direct_apply`；它表示改动已在主工作区中，由 Orchestrator 验收并完成主工作区验证，不虚构 merge 或 commit。
 
@@ -280,21 +280,10 @@ python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_valid
 
 ## 设计原则
 
-- V1.1 保持轻量。
+- 保持轻量。
 - 用显式状态文件作为项目记忆。
 - 将大任务拆成有边界的小任务。
 - 声称完成前必须验证。
 - 分离 Maker 和 Checker 角色。
 - 优先沿用现有项目约定。
 - 改变已确认需求、增加高风险依赖、使用凭证或消耗付费资源前，必须询问用户。
-
-## 路线图
-
-V2 可以考虑：
-
-- 更完整的 Codex、Claude Code、Hermes 分发打包
-- 可选全局 CLI
-- 更完整的任务提交包和交接验证器
-- 自动 worktree 池和冲突分析
-- 示例项目
-- marketplace 或 hub 分发元数据

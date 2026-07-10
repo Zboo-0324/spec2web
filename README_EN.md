@@ -36,7 +36,7 @@ Spec2Web helps an agent:
 
 ## What It Does Not Do
 
-Spec2Web V1.1 does not:
+Spec2Web does not:
 
 - generate an application from a prompt
 - provide a full-stack code template
@@ -168,7 +168,7 @@ Initialize state files:
 python spec2web/scripts/init-state.py --target .
 ```
 
-Migrate V1 state to schema 1.1:
+Migrate existing state:
 
 ```powershell
 python spec2web/scripts/migrate-state.py --target . --dry-run
@@ -254,9 +254,9 @@ Spec2Web uses PR/worktree handoff for delegated or parallel tasks in Git project
 - the Orchestrator integrates serially through `merge`, `squash_merge`, `cherry_pick`, or `integration_commit`
 - verification runs in the main workspace after each integration
 
-V1.1 does not provide an automatic worker pool or unattended integration scheduler.
+Spec2Web does not provide an automatic worker pool or unattended integration scheduler.
 
-V1.1 permits agents exposed by the current Codex host, including host-authorized local or Codex cloud execution. It does not call third-party AI services or external agent products without explicit user authorization.
+Spec2Web permits agents exposed by the current Codex host, including host-authorized local or Codex cloud execution. It does not call third-party AI services or external agent products without explicit user authorization.
 
 For non-Git projects or explicit single-session fallback, use `handoff_mode: single_session` with `integration_strategy: direct_apply`. This records that accepted changes already exist in the main workspace and require Orchestrator verification without inventing a merge or commit.
 
@@ -280,21 +280,10 @@ python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_valid
 
 ## Design Principles
 
-- Keep V1.1 lightweight.
+- Keep the workflow lightweight.
 - Use explicit state files as project memory.
 - Split large work into bounded tasks.
 - Require verification before completion claims.
 - Separate maker and checker roles.
 - Prefer existing project conventions.
 - Ask the user before changing confirmed requirements, adding high-risk dependencies, using credentials, or consuming paid resources.
-
-## Roadmap
-
-Potential V2 additions:
-
-- richer distribution packaging for Codex, Claude Code, and Hermes
-- optional global CLI
-- richer task submission and handoff validators
-- automatic worktree pool and conflict analysis
-- example projects
-- marketplace or hub distribution metadata

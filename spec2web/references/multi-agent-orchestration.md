@@ -1,6 +1,6 @@
 # Adaptive Multi-Agent Orchestration
 
-Spec2Web V1.1 uses host-provided agents adaptively. It remains a state-file workflow, not a background scheduler, worker pool, or autonomous merge service.
+Spec2Web uses host-provided agents adaptively. It remains a state-file workflow, not a background scheduler, worker pool, or autonomous merge service.
 
 ## Contents
 
