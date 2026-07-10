@@ -1,6 +1,6 @@
 ---
 name: webbuilder
-description: Use when the user asks to initialize, enable, start, resume, or run Spec2Web for a web project, or when the current project contains spec2web/loop-state.md with status active. Guides full-stack web delivery through first-principles baselines, phase gates, adaptive single/delegated/parallel agent execution, risk-tiered independent and adversarial review, isolated PR/worktree handoffs, serial integration, repair, and delivery reporting.
+description: Use when the user asks to initialize, enable, start, resume, or run WebBuilder for a web project, or when the current project contains webbuilder/loop-state.md with status active. Guides full-stack web delivery through first-principles baselines, phase gates, adaptive single/delegated/parallel agent execution, risk-tiered independent and adversarial review, isolated PR/worktree handoffs, serial integration, repair, and delivery reporting.
 ---
 
 # WebBuilder
@@ -20,7 +20,7 @@ Use this Skill when the user explicitly asks to initialize, enable, start, resum
 - "use WebBuilder for this project"
 - "start WebBuilder mode"
 
-If the current project contains `spec2web/loop-state.md` with `status: active`, continue to use this Skill for full-stack project work. If the workflow is not initialized and the user asks for an ordinary coding task, do not take over the task automatically.
+If the current project contains `webbuilder/loop-state.md` with `status: active`, continue to use this Skill for full-stack project work. If the workflow is not initialized and the user asks for an ordinary coding task, do not take over the task automatically.
 
 For localized invocation examples and install paths, read `references/install.md`.
 
@@ -50,12 +50,12 @@ python <skill-root>/scripts/check-state.py --target <project-root> --phase struc
 
 Do not write application code until all of these exist and are ready:
 
-- `spec2web/project-rules.md` has `status: ready`,
-- `spec2web/requirements-baseline.md` has `status: confirmed`,
+- `webbuilder/project-rules.md` has `status: ready`,
+- `webbuilder/requirements-baseline.md` has `status: confirmed`,
 - the Requirement Baseline records outcome, hard constraints/invariants, assumptions with evidence, and blocking questions,
-- `spec2web/system-design.md` has `status: ready`,
-- `spec2web/task-plan.md` has `status: ready`,
-- `spec2web/loop-state.md`
+- `webbuilder/system-design.md` has `status: ready`,
+- `webbuilder/task-plan.md` has `status: ready`,
+- `webbuilder/loop-state.md`
 
 Before the first application-code task, run the bundled checker from this Skill directory:
 
@@ -72,13 +72,13 @@ Do not accept or mark a task complete until:
 - the task has an integration strategy,
 - delegated or parallel implementation used the assigned PR/worktree handoff; single-session work used `direct_apply`,
 - the Developer has submitted an implementation summary and evidence package,
-- verification results are recorded in `spec2web/validation-log.md`,
+- verification results are recorded in `webbuilder/validation-log.md`,
 - Reviewer has checked scope, quality, and workflow compliance,
 - high- and critical-risk tasks have passed their declared adversarial review and separate Tester/Reviewer checks,
 - Orchestrator has run the task acceptance gate and chosen accept, repair, or block,
 - Orchestrator has executed a formal integration point when acceptance passed,
 - main-workspace verification passed after integration,
-- `spec2web/loop-state.md` is updated.
+- `webbuilder/loop-state.md` is updated.
 
 ## Workflow
 
@@ -170,7 +170,7 @@ Before requirements or coding, read project-level rule files when present:
 - `GEMINI.md`
 - `README.md`
 
-Summarize implementation-relevant rules into `spec2web/project-rules.md`. User instructions take priority over project rules; project rules take priority over this Skill; this Skill takes priority over default agent habits.
+Summarize implementation-relevant rules into `webbuilder/project-rules.md`. User instructions take priority over project rules; project rules take priority over this Skill; this Skill takes priority over default agent habits.
 
 ## First-Principles and Review
 
@@ -182,7 +182,7 @@ For the full first-principles, risk, adversarial-review, and disagreement protoc
 
 ## State Files
 
-Maintain project memory in `spec2web/`:
+Maintain project memory in `webbuilder/`:
 
 - `project-rules.md`
 - `requirements-baseline.md`

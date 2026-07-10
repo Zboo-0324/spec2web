@@ -10,7 +10,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+STATE_DIR_NAME = "webbuilder"
+LEGACY_STATE_DIR_NAME = "spec2web"
 SCHEMA_VERSION = "1.3"
+
+
+def resolve_state_dir(target: Path) -> Path:
+    state_dir = target / STATE_DIR_NAME
+    legacy_state_dir = target / LEGACY_STATE_DIR_NAME
+    if not (state_dir / "loop-state.md").exists() and (
+        legacy_state_dir / "loop-state.md"
+    ).exists():
+        return legacy_state_dir
+    return state_dir
 
 ORCHESTRATION_FIELDS = [
     ("schema_version", SCHEMA_VERSION),
@@ -44,7 +56,7 @@ TASK_DEFAULT_VALUES = {
 
 SHARED_CONTRACT_SECTION = """## Shared Contract Paths
 
-- spec2web/
+- webbuilder/
 - package.json
 - pyproject.toml
 - migrations/
@@ -182,7 +194,7 @@ def migrate_requirements_baseline(text: str) -> str:
 
 
 def migrate(target: Path, dry_run: bool) -> tuple[list[Path], Path | None]:
-    state_dir = target / "spec2web"
+    state_dir = resolve_state_dir(target)
     loop_state = state_dir / "loop-state.md"
     task_plan = state_dir / "task-plan.md"
     requirements_baseline = state_dir / "requirements-baseline.md"
@@ -220,11 +232,11 @@ def migrate(target: Path, dry_run: bool) -> tuple[list[Path], Path | None]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Migrate Spec2Web state to V1.2.")
+    parser = argparse.ArgumentParser(description="Migrate WebBuilder state to V1.3.")
     parser.add_argument(
         "--target",
         default=".",
-        help="Project directory containing the spec2web state folder.",
+        help="Project directory containing the webbuilder state folder.",
     )
     parser.add_argument(
         "--dry-run",

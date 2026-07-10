@@ -150,7 +150,7 @@ Use `integration_commit` sparingly. It is for Orchestrator-owned reconciliation 
 Use predictable names:
 
 ```text
-branch: spec2web/TASK-001-short-title
+branch: webbuilder/TASK-001-short-title
 worktree: ../<repo-name>-TASK-001
 local_pr: TASK-001/<short-title>
 ```

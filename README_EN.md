@@ -144,14 +144,14 @@ start Spec2Web mode
 resume Spec2Web
 ```
 
-Spec2Web should not take over ordinary coding tasks unless it has been explicitly requested or the project has an active `spec2web/loop-state.md`.
+WebBuilder should not take over ordinary coding tasks unless it has been explicitly requested or the project has an active `webbuilder/loop-state.md`.
 
 ## Project State
 
-When initialized inside a project, Spec2Web creates:
+When initialized inside a project, WebBuilder creates:
 
 ```text
-spec2web/
+webbuilder/
   project-rules.md
   requirements-baseline.md
   system-design.md
@@ -178,7 +178,7 @@ python webbuilder/scripts/migrate-state.py --target . --dry-run
 python webbuilder/scripts/migrate-state.py --target .
 ```
 
-Migration first creates a timestamped backup under the project's `spec2web/` state folder. Remove it after validation or keep it local; do not commit migration backups.
+Migration first creates a timestamped backup under the project's `webbuilder/` state folder. Remove it after validation or keep it local; do not commit migration backups.
 
 Check the state structure:
 

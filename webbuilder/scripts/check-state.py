@@ -9,7 +9,19 @@ from itertools import combinations
 from pathlib import Path
 
 
+STATE_DIR_NAME = "webbuilder"
+LEGACY_STATE_DIR_NAME = "spec2web"
 SCHEMA_VERSION = "1.3"
+
+
+def resolve_state_dir(target: Path) -> Path:
+    state_dir = target / STATE_DIR_NAME
+    legacy_state_dir = target / LEGACY_STATE_DIR_NAME
+    if not (state_dir / "loop-state.md").exists() and (
+        legacy_state_dir / "loop-state.md"
+    ).exists():
+        return legacy_state_dir
+    return state_dir
 
 REQUIRED_FILES = [
     "project-rules.md",
@@ -968,7 +980,7 @@ def check_state(
     task_id: str | None = None,
     parallel_group: str | None = None,
 ) -> list[str]:
-    state_dir = target / "spec2web"
+    state_dir = resolve_state_dir(target)
     if not state_dir.exists():
         return [f"missing state directory: {state_dir}"]
 
@@ -995,7 +1007,7 @@ def main() -> int:
     parser.add_argument(
         "--target",
         default=".",
-        help="Project directory containing the spec2web state folder.",
+        help="Project directory containing the webbuilder state folder.",
     )
     parser.add_argument(
         "--phase",

@@ -7,6 +7,9 @@ import argparse
 from pathlib import Path
 
 
+STATE_DIR_NAME = "webbuilder"
+
+
 TEMPLATES = {
     "project-rules.md": """# Project Rules
 
@@ -192,7 +195,7 @@ For non-Git or single-session tasks, pair `handoff_mode: single_session` with `i
 
 ## Shared Contract Paths
 
-- spec2web/
+- webbuilder/
 - package.json
 - pyproject.toml
 - migrations/
@@ -333,7 +336,7 @@ status: draft
 
 
 def initialize(target: Path) -> tuple[list[Path], list[Path]]:
-    state_dir = target / "spec2web"
+    state_dir = target / STATE_DIR_NAME
     state_dir.mkdir(parents=True, exist_ok=True)
 
     created: list[Path] = []
@@ -351,18 +354,18 @@ def initialize(target: Path) -> tuple[list[Path], list[Path]]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Initialize Spec2Web state files.")
+    parser = argparse.ArgumentParser(description="Initialize WebBuilder state files.")
     parser.add_argument(
         "--target",
         default=".",
-        help="Project directory where the spec2web state folder should be created.",
+        help="Project directory where the webbuilder state folder should be created.",
     )
     args = parser.parse_args()
 
     target = Path(args.target).resolve()
     created, skipped = initialize(target)
 
-    print(f"Spec2Web state directory: {target / 'spec2web'}")
+    print(f"WebBuilder state directory: {target / STATE_DIR_NAME}")
     for path in created:
         print(f"created: {path}")
     for path in skipped:

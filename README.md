@@ -144,14 +144,14 @@ start Spec2Web mode
 resume Spec2Web
 ```
 
-Spec2Web 不应该自动接管普通编码任务。只有当用户显式要求，或项目中存在 active 的 `spec2web/loop-state.md` 时，它才持续约束后续全栈开发工作。
+WebBuilder 不应该自动接管普通编码任务。只有当用户显式要求，或项目中存在 active 的 `webbuilder/loop-state.md` 时，它才持续约束后续全栈开发工作。
 
 ## 项目状态文件
 
-在项目中初始化后，Spec2Web 会创建：
+在项目中初始化后，WebBuilder 会创建：
 
 ```text
-spec2web/
+webbuilder/
   project-rules.md
   requirements-baseline.md
   system-design.md
@@ -178,7 +178,7 @@ python webbuilder/scripts/migrate-state.py --target . --dry-run
 python webbuilder/scripts/migrate-state.py --target .
 ```
 
-迁移会先在项目的 `spec2web/` 状态目录中创建时间戳备份；验证通过后请删除或保持本地，不要提交备份目录。
+迁移会先在项目的 `webbuilder/` 状态目录中创建时间戳备份；验证通过后请删除或保持本地，不要提交备份目录。
 
 检查状态结构：
 

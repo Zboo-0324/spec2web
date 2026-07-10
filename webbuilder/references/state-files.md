@@ -1,6 +1,6 @@
 # State Files
 
-Spec2Web stores project memory in `spec2web/`. These files are the source of truth after initialization.
+WebBuilder stores project memory in `webbuilder/`. These files are the source of truth after initialization.
 
 ## Contents
 
@@ -13,7 +13,7 @@ Spec2Web stores project memory in `spec2web/`. These files are the source of tru
 ## Required Files
 
 ```text
-spec2web/
+webbuilder/
 ├── project-rules.md
 ├── requirements-baseline.md
 ├── system-design.md
@@ -255,7 +255,7 @@ For non-Git or single-session tasks, pair `handoff_mode: single_session` with `i
 
 ## Shared Contract Paths
 
-- spec2web/
+- webbuilder/
 - package.json
 - pyproject.toml
 - migrations/
@@ -451,7 +451,7 @@ python <skill-root>/scripts/migrate-state.py --target <project-root> --dry-run
 python <skill-root>/scripts/migrate-state.py --target <project-root>
 ```
 
-The migration creates a timestamped backup directory under the project's `spec2web/` state folder before writing. Keep it until structure and execution checks pass, then remove it or keep it local; do not commit migration backups.
+The migration creates a timestamped backup directory under the project's `webbuilder/` state folder before writing. Keep it until structure and execution checks pass, then remove it or keep it local; do not commit migration backups.
 
 Run the bundled checker from the installed or project-local Skill directory:
 

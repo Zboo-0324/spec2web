@@ -23,7 +23,7 @@ Keep `system-design.md` at `status: draft` while stack choices or verification c
 
 ## Required Output
 
-Write this section into `spec2web/system-design.md`:
+Write this section into `webbuilder/system-design.md`:
 
 ```markdown
 ## Technology Strategy

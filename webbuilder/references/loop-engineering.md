@@ -35,7 +35,7 @@ Read State
 
 ## External Memory
 
-Conversation is not memory. The project memory lives in `spec2web/`:
+Conversation is not memory. The project memory lives in `webbuilder/`:
 
 - `project-rules.md` records local engineering rules.
 - `requirements-baseline.md` records confirmed requirements.

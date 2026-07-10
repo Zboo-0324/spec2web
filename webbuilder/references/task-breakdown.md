@@ -179,7 +179,7 @@ Define project-specific serial-only paths near the top of `task-plan.md`:
 ```markdown
 ## Shared Contract Paths
 
-- spec2web/
+- webbuilder/
 - package.json
 - pyproject.toml
 - migrations/

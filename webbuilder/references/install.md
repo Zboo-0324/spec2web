@@ -59,5 +59,5 @@ resume WebBuilder
 Add this to `CLAUDE.md` or `AGENTS.md` only when the project should keep using Spec2Web after initialization:
 
 ```text
-Use the webbuilder Skill only when explicitly requested or when spec2web/loop-state.md exists with status active. Do not let it override ordinary coding tasks when the workflow has not been initialized.
+Use the webbuilder Skill only when explicitly requested or when webbuilder/loop-state.md exists with status active. Do not let it override ordinary coding tasks when the workflow has not been initialized.
 ```

@@ -6,7 +6,7 @@ Keep `system-design.md` at `status: draft` until the required interface baseline
 
 ## Required Baseline
 
-Write this section into `spec2web/system-design.md` before frontend task breakdown:
+Write this section into `webbuilder/system-design.md` before frontend task breakdown:
 
 ```markdown
 ## Interface Design Baseline
