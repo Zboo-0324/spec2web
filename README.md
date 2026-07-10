@@ -1,4 +1,4 @@
-# Spec2Web
+# WebBuilder
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 
 需求基线 · 技术栈推荐 · 界面设计基线 · 任务拆解 · Loop Engineering · PR/Worktree 交接 · 验证交付
 
-![skill](https://img.shields.io/badge/skill-spec2web-blue)
+![skill](https://img.shields.io/badge/skill-webbuilder-blue)
 ![install](https://img.shields.io/badge/install-Codex%20%7C%20Claude%20Code%20%7C%20Hermes-black)
 ![language](https://img.shields.io/badge/language-%E4%B8%AD%E6%96%87%20%7C%20English-blue)
 
@@ -14,7 +14,7 @@
 
 </div>
 
-Spec2Web 是一个轻量级 Skill，用来指导 AI 编程智能体完成全栈 Web 项目的交付流程。
+WebBuilder 是一个轻量级 Skill，用来指导 AI 编程智能体完成全栈 Web 项目的交付流程。
 
 它不是运行时、代码生成器、MCP Server、后台调度器或项目模板。Spec2Web 的重点是给智能体一套可恢复、可审查、可验证的工作流，让它从需求出发，逐步完成设计、拆解、开发、验证、修复和交付，同时保持方向、边界和项目记忆。
 
@@ -52,7 +52,7 @@ Spec2Web 不会：
 ## 仓库结构
 
 ```text
-spec2web/
+webbuilder/
   SKILL.md
   agents/
     openai.yaml
@@ -76,7 +76,7 @@ spec2web/
 
 ## 安装
 
-请安装整个 `spec2web/` 文件夹，而不是只复制 `SKILL.md`。
+请安装整个 `webbuilder/` 文件夹，而不是只复制 `SKILL.md`。
 
 ### Codex
 
@@ -84,8 +84,8 @@ spec2web/
 git clone https://github.com/Zboo-0324/spec2web.git
 Set-Location spec2web
 
-$src = (Resolve-Path ".\spec2web").Path
-$dst = "$env:USERPROFILE\.codex\skills\spec2web"
+$src = (Resolve-Path ".\webbuilder").Path
+$dst = "$env:USERPROFILE\.codex\skills\webbuilder"
 
 New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
@@ -99,8 +99,8 @@ robocopy $src $dst /MIR
 git clone https://github.com/Zboo-0324/spec2web.git
 Set-Location spec2web
 
-$src = (Resolve-Path ".\spec2web").Path
-$dst = "$env:USERPROFILE\.claude\skills\spec2web"
+$src = (Resolve-Path ".\webbuilder").Path
+$dst = "$env:USERPROFILE\.claude\skills\webbuilder"
 
 New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
@@ -114,8 +114,8 @@ robocopy $src $dst /MIR
 git clone https://github.com/Zboo-0324/spec2web.git
 Set-Location spec2web
 
-$src = (Resolve-Path ".\spec2web").Path
-$dst = "$env:USERPROFILE\.hermes\skills\spec2web"
+$src = (Resolve-Path ".\webbuilder").Path
+$dst = "$env:USERPROFILE\.hermes\skills\webbuilder"
 
 New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
@@ -128,12 +128,12 @@ robocopy $src $dst /MIR
 当你希望启用 Spec2Web 工作流时，显式调用它：
 
 ```text
-/spec2web initialize this project
-/spec2web enable workflow
-/spec2web start from requirements.md
-/spec2web continue current task
-/spec2web show status
-/spec2web generate delivery report
+/webbuilder initialize this project
+/webbuilder enable workflow
+/webbuilder start from requirements.md
+/webbuilder continue current task
+/webbuilder show status
+/webbuilder generate delivery report
 ```
 
 也可以用自然语言：
@@ -168,14 +168,14 @@ spec2web/
 初始化状态文件：
 
 ```powershell
-python spec2web/scripts/init-state.py --target .
+python webbuilder/scripts/init-state.py --target .
 ```
 
 迁移已有状态：
 
 ```powershell
-python spec2web/scripts/migrate-state.py --target . --dry-run
-python spec2web/scripts/migrate-state.py --target .
+python webbuilder/scripts/migrate-state.py --target . --dry-run
+python webbuilder/scripts/migrate-state.py --target .
 ```
 
 迁移会先在项目的 `spec2web/` 状态目录中创建时间戳备份；验证通过后请删除或保持本地，不要提交备份目录。
@@ -183,19 +183,19 @@ python spec2web/scripts/migrate-state.py --target .
 检查状态结构：
 
 ```powershell
-python spec2web/scripts/check-state.py --target . --phase structure
+python webbuilder/scripts/check-state.py --target . --phase structure
 ```
 
 开始应用代码任务前，运行执行门禁：
 
 ```powershell
-python spec2web/scripts/check-state.py --target . --phase execution
+python webbuilder/scripts/check-state.py --target . --phase execution
 ```
 
 最终交付前，运行交付门禁：
 
 ```powershell
-python spec2web/scripts/check-state.py --target . --phase delivery
+python webbuilder/scripts/check-state.py --target . --phase delivery
 ```
 
 检查脚本提供七个阶段：
@@ -276,14 +276,14 @@ Spec2Web 允许使用当前 Codex 宿主提供的本地或 Codex 云端智能体
 $tmp = Join-Path $env:TEMP "spec2web-smoke"
 Remove-Item -Recurse -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
-python spec2web/scripts/init-state.py --target $tmp
-python spec2web/scripts/check-state.py --target $tmp --phase structure
+python webbuilder/scripts/init-state.py --target $tmp
+python webbuilder/scripts/check-state.py --target $tmp --phase structure
 ```
 
 校验 Skill 包：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" spec2web
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" webbuilder
 ```
 
 ## 设计原则

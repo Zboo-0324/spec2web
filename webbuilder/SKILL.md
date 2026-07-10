@@ -1,9 +1,9 @@
 ---
-name: spec2web
+name: webbuilder
 description: Use when the user asks to initialize, enable, start, resume, or run Spec2Web for a web project, or when the current project contains spec2web/loop-state.md with status active. Guides full-stack web delivery through first-principles baselines, phase gates, adaptive single/delegated/parallel agent execution, risk-tiered independent and adversarial review, isolated PR/worktree handoffs, serial integration, repair, and delivery reporting.
 ---
 
-# Spec2Web
+# WebBuilder
 
 Use this Skill to guide a coding agent through full-stack web project delivery without a heavy runtime, code generator, MCP server, or background scheduler.
 
@@ -11,14 +11,14 @@ Use this Skill to guide a coding agent through full-stack web project delivery w
 
 Use this Skill when the user explicitly asks to initialize, enable, start, resume, continue, or run Spec2Web, including natural-language variants such as:
 
-- `/spec2web initialize this project`
-- `/spec2web enable workflow`
-- `/spec2web start from requirements.md`
-- `/spec2web continue current task`
-- `/spec2web show status`
-- `/spec2web generate delivery report`
-- "use Spec2Web for this project"
-- "start Spec2Web mode"
+- `/webbuilder initialize this project`
+- `/webbuilder enable workflow`
+- `/webbuilder start from requirements.md`
+- `/webbuilder continue current task`
+- `/webbuilder show status`
+- `/webbuilder generate delivery report`
+- "use WebBuilder for this project"
+- "start WebBuilder mode"
 
 If the current project contains `spec2web/loop-state.md` with `status: active`, continue to use this Skill for full-stack project work. If the workflow is not initialized and the user asks for an ordinary coding task, do not take over the task automatically.
 

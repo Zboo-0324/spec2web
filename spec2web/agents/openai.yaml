@@ -1,7 +1,0 @@
-interface:
-  display_name: "Spec2Web"
-  short_description: "Orchestrate gated multi-agent full-stack delivery"
-  default_prompt: "Use $spec2web to initialize or continue an adaptive multi-agent web delivery workflow."
-
-policy:
-  allow_implicit_invocation: true

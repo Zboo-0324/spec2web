@@ -1,4 +1,4 @@
-# Spec2Web
+# WebBuilder
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 
 Requirements baseline · Technology strategy · Interface design · Task breakdown · Loop Engineering · PR/worktree handoff · Validation
 
-![skill](https://img.shields.io/badge/skill-spec2web-blue)
+![skill](https://img.shields.io/badge/skill-webbuilder-blue)
 ![install](https://img.shields.io/badge/install-Codex%20%7C%20Claude%20Code%20%7C%20Hermes-black)
 ![language](https://img.shields.io/badge/language-%E4%B8%AD%E6%96%87%20%7C%20English-blue)
 
@@ -14,7 +14,7 @@ Requirements baseline · Technology strategy · Interface design · Task breakdo
 
 </div>
 
-Spec2Web is a lightweight Skill for guiding AI coding agents through full-stack web project delivery.
+WebBuilder is a lightweight Skill for guiding AI coding agents through full-stack web project delivery.
 
 It is intentionally not a runtime, code generator, MCP server, background scheduler, or framework template. Instead, Spec2Web gives an agent a stateful workflow for moving from requirements to implementation, validation, repair, and delivery while keeping scope, quality, and project memory explicit.
 
@@ -52,7 +52,7 @@ Spec2Web does not:
 ## Repository Layout
 
 ```text
-spec2web/
+webbuilder/
   SKILL.md
   agents/
     openai.yaml
@@ -76,7 +76,7 @@ spec2web/
 
 ## Install
 
-Install the whole `spec2web/` folder, not only `SKILL.md`.
+Install the whole `webbuilder/` folder, not only `SKILL.md`.
 
 ### Codex
 
@@ -84,8 +84,8 @@ Install the whole `spec2web/` folder, not only `SKILL.md`.
 git clone https://github.com/Zboo-0324/spec2web.git
 Set-Location spec2web
 
-$src = (Resolve-Path ".\spec2web").Path
-$dst = "$env:USERPROFILE\.codex\skills\spec2web"
+$src = (Resolve-Path ".\webbuilder").Path
+$dst = "$env:USERPROFILE\.codex\skills\webbuilder"
 
 New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
@@ -99,8 +99,8 @@ Restart Codex after installation.
 git clone https://github.com/Zboo-0324/spec2web.git
 Set-Location spec2web
 
-$src = (Resolve-Path ".\spec2web").Path
-$dst = "$env:USERPROFILE\.claude\skills\spec2web"
+$src = (Resolve-Path ".\webbuilder").Path
+$dst = "$env:USERPROFILE\.claude\skills\webbuilder"
 
 New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
@@ -114,8 +114,8 @@ Restart Claude Code after installation.
 git clone https://github.com/Zboo-0324/spec2web.git
 Set-Location spec2web
 
-$src = (Resolve-Path ".\spec2web").Path
-$dst = "$env:USERPROFILE\.hermes\skills\spec2web"
+$src = (Resolve-Path ".\webbuilder").Path
+$dst = "$env:USERPROFILE\.hermes\skills\webbuilder"
 
 New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
 robocopy $src $dst /MIR
@@ -128,12 +128,12 @@ Restart Hermes after installation.
 Use Spec2Web explicitly when you want the workflow active:
 
 ```text
-/spec2web initialize this project
-/spec2web enable workflow
-/spec2web start from requirements.md
-/spec2web continue current task
-/spec2web show status
-/spec2web generate delivery report
+/webbuilder initialize this project
+/webbuilder enable workflow
+/webbuilder start from requirements.md
+/webbuilder continue current task
+/webbuilder show status
+/webbuilder generate delivery report
 ```
 
 Natural-language equivalents also work:
@@ -168,14 +168,14 @@ These files are the source of truth. Conversation context does not replace them.
 Initialize state files:
 
 ```powershell
-python spec2web/scripts/init-state.py --target .
+python webbuilder/scripts/init-state.py --target .
 ```
 
 Migrate existing state:
 
 ```powershell
-python spec2web/scripts/migrate-state.py --target . --dry-run
-python spec2web/scripts/migrate-state.py --target .
+python webbuilder/scripts/migrate-state.py --target . --dry-run
+python webbuilder/scripts/migrate-state.py --target .
 ```
 
 Migration first creates a timestamped backup under the project's `spec2web/` state folder. Remove it after validation or keep it local; do not commit migration backups.
@@ -183,19 +183,19 @@ Migration first creates a timestamped backup under the project's `spec2web/` sta
 Check the state structure:
 
 ```powershell
-python spec2web/scripts/check-state.py --target . --phase structure
+python webbuilder/scripts/check-state.py --target . --phase structure
 ```
 
 Before application-code tasks, run the execution gate:
 
 ```powershell
-python spec2web/scripts/check-state.py --target . --phase execution
+python webbuilder/scripts/check-state.py --target . --phase execution
 ```
 
 Before final delivery, run the delivery gate:
 
 ```powershell
-python spec2web/scripts/check-state.py --target . --phase delivery
+python webbuilder/scripts/check-state.py --target . --phase delivery
 ```
 
 The checker has seven validation phases:
@@ -276,14 +276,14 @@ Run a state script smoke check:
 $tmp = Join-Path $env:TEMP "spec2web-smoke"
 Remove-Item -Recurse -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
-python spec2web/scripts/init-state.py --target $tmp
-python spec2web/scripts/check-state.py --target $tmp --phase structure
+python webbuilder/scripts/init-state.py --target $tmp
+python webbuilder/scripts/check-state.py --target $tmp --phase structure
 ```
 
 Validate the Skill package:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" spec2web
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" webbuilder
 ```
 
 ## Design Principles
