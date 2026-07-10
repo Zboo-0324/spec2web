@@ -40,6 +40,19 @@ status: draft
 
 status: draft
 
+## User Discovery
+
+discovery_status: pending
+
+### Questions for User
+
+- What outcome should WebBuilder deliver, for whom, and how will success be recognized?
+- What constraints, integrations, data, or non-goals must be preserved?
+
+### User Answers
+
+- not recorded
+
 ## First-Principles Analysis
 
 ### Core Outcome

@@ -216,6 +216,7 @@ The top-level workflow is:
 
 ```text
 Project Rules
+-> User Discovery Gate
 -> First-Principles Analysis
 -> Requirement Baseline
 -> Technology Strategy
@@ -226,6 +227,8 @@ Project Rules
 -> Integration Validation
 -> Delivery
 ```
+
+WebBuilder must ask the user about the outcome, audience, must-have requirements, constraints, success signals, and non-goals before confirming requirements. `spec.md`, README files, and existing code are evidence for those questions, not substitutes for user confirmation; `discovery_status` must remain `pending` until the user answers.
 
 Each task loop is:
 

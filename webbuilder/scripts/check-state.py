@@ -99,6 +99,7 @@ SYSTEM_DESIGN_MARKERS = [
 ]
 
 REQUIREMENTS_BASELINE_MARKERS = [
+    "## User Discovery",
     "## First-Principles Analysis",
     "### Core Outcome",
     "### Hard Constraints and Invariants",
@@ -359,6 +360,11 @@ def check_structure(state_dir: Path) -> list[str]:
         for marker in REQUIREMENTS_BASELINE_MARKERS:
             if marker not in requirements_baseline:
                 errors.append(f"requirements-baseline.md missing marker: {marker}")
+        discovery_status = top_level_value(requirements_baseline, "discovery_status")
+        if discovery_status not in {"pending", "confirmed"}:
+            errors.append(
+                "requirements-baseline.md discovery_status must be pending or confirmed"
+            )
 
     task_plan = read_text(state_dir, "task-plan.md")
     if task_plan:
@@ -469,6 +475,14 @@ def check_execution_readiness(state_dir: Path, loop_status: str) -> list[str]:
         text = read_text(state_dir, filename).lower()
         if any(fragment in text for fragment in fragments):
             errors.append(f"{filename} contains placeholder content")
+
+    requirements_text = read_text(state_dir, "requirements-baseline.md")
+    if top_level_value(requirements_text, "discovery_status") != "confirmed":
+        errors.append(
+            "requirements-baseline.md discovery_status must be confirmed after user answers"
+        )
+    if re.search(r"(?mi)^- not recorded\s*$", requirements_text):
+        errors.append("requirements-baseline.md user discovery answers are not recorded")
 
     actual_loop_status = top_level_value(read_text(state_dir, "loop-state.md"), "status")
     if actual_loop_status != loop_status:

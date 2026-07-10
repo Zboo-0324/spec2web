@@ -216,6 +216,7 @@ python webbuilder/scripts/check-state.py --target . --phase delivery
 
 ```text
 Project Rules
+-> User Discovery Gate
 -> First-Principles Analysis
 -> Requirement Baseline
 -> Technology Strategy
@@ -226,6 +227,8 @@ Project Rules
 -> Integration Validation
 -> Delivery
 ```
+
+WebBuilder 必须先向用户澄清目标、受众、必须需求、约束、成功信号和非目标。仓库中的 `spec.md`、README 或现有代码只能作为提问依据，不能被默认为用户确认；需求基线的 `discovery_status` 在用户回答前必须保持 `pending`。
 
 单个任务循环：
 

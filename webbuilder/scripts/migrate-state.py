@@ -80,6 +80,21 @@ FIRST_PRINCIPLES_SECTION = """## First-Principles Analysis
 
 """
 
+DISCOVERY_SECTION = """## User Discovery
+
+discovery_status: pending
+
+### Questions for User
+
+- What outcome should WebBuilder deliver, for whom, and how will success be recognized?
+- What constraints, integrations, data, or non-goals must be preserved?
+
+### User Answers
+
+- not recorded
+
+"""
+
 
 def migrate_loop_state(text: str) -> str:
     text = text.replace(
@@ -182,15 +197,17 @@ def migrate_task_plan(text: str) -> str:
 
 
 def migrate_requirements_baseline(text: str) -> str:
-    if re.search(r"(?m)^## First-Principles Analysis\s*$", text):
+    if re.search(r"(?m)^## User Discovery\s*$", text):
         return text
+    if re.search(r"(?m)^## First-Principles Analysis\s*$", text):
+        return text.replace("## First-Principles Analysis", DISCOVERY_SECTION + "## First-Principles Analysis", 1)
     marker = "## Assumptions"
     if marker in text:
         return text.replace(marker, FIRST_PRINCIPLES_SECTION + marker, 1)
     marker = "## Open Questions"
     if marker in text:
         return text.replace(marker, FIRST_PRINCIPLES_SECTION + marker, 1)
-    return text.rstrip() + "\n\n" + FIRST_PRINCIPLES_SECTION
+    return text.rstrip() + "\n\n" + DISCOVERY_SECTION + FIRST_PRINCIPLES_SECTION
 
 
 def migrate(target: Path, dry_run: bool) -> tuple[list[Path], Path | None]:

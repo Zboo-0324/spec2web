@@ -82,6 +82,19 @@ Template:
 
 status: draft
 
+## User Discovery
+
+discovery_status: pending
+
+### Questions for User
+
+- What outcome should be delivered, and who is it for?
+- What are the must-have requirements, constraints, success signals, and non-goals?
+
+### User Answers
+
+- not recorded
+
 ## First-Principles Analysis
 
 ### Core Outcome

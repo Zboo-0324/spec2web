@@ -9,6 +9,8 @@ Spec2Web uses four complementary controls to make delivery decisions reliable wi
 
 ## First-Principles Analysis
 
+First-principles analysis begins only after the User Discovery Gate. Existing specifications and repository evidence can inform questions, but they cannot substitute for user answers about outcome, audience, constraints, success signals, and non-goals.
+
 Before confirming `requirements-baseline.md`, record the first-principles analysis, then use it to confirm requirements:
 
 - the user or business outcome that must be true when the work succeeds;

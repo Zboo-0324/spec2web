@@ -9,7 +9,7 @@ Use this Skill to guide a coding agent through full-stack web project delivery w
 
 ## Activation
 
-Use this Skill when the user explicitly asks to initialize, enable, start, resume, continue, or run Spec2Web, including natural-language variants such as:
+Use this Skill when the user explicitly asks to initialize, enable, start, resume, continue, or run WebBuilder, including natural-language variants such as:
 
 - `/webbuilder initialize this project`
 - `/webbuilder enable workflow`
@@ -26,7 +26,7 @@ For localized invocation examples and install paths, read `references/install.md
 
 ## Initialization
 
-When the user asks to initialize Spec2Web:
+When the user asks to initialize WebBuilder:
 
 1. Resolve `<skill-root>` to the folder containing this `SKILL.md` and `<project-root>` to the target project.
 2. Read project rule files before changing state.
@@ -44,7 +44,7 @@ python <skill-root>/scripts/migrate-state.py --target <project-root>
 python <skill-root>/scripts/check-state.py --target <project-root> --phase structure
 ```
 
-6. Populate Project Rules, Requirement Baseline, System Design, and Task Breakdown in order. Keep generated artifacts `draft` until their phase exit gates are satisfied.
+6. Run the mandatory User Discovery Gate below before writing or confirming the Requirement Baseline. Keep generated artifacts `draft` until their phase exit gates are satisfied.
 
 ## Hard Gates
 
@@ -52,6 +52,7 @@ Do not write application code until all of these exist and are ready:
 
 - `webbuilder/project-rules.md` has `status: ready`,
 - `webbuilder/requirements-baseline.md` has `status: confirmed`,
+- `webbuilder/requirements-baseline.md` has `discovery_status: confirmed` with recorded user answers,
 - the Requirement Baseline records outcome, hard constraints/invariants, assumptions with evidence, and blocking questions,
 - `webbuilder/system-design.md` has `status: ready`,
 - `webbuilder/task-plan.md` has `status: ready`,
@@ -85,20 +86,22 @@ Do not accept or mark a task complete until:
 Follow this sequence:
 
 1. Project Rules
-2. First-Principles Analysis
-3. Requirement Baseline
-4. Technology Strategy
-5. Interface Design Baseline
-6. System Design
-7. Task Breakdown
-8. Task Execution Loop: submission, acceptance, integration, and main-workspace verification
-9. Integration Validation
-10. Delivery
+2. User Discovery Gate
+3. First-Principles Analysis
+4. Requirement Baseline
+5. Technology Strategy
+6. Interface Design Baseline
+7. System Design
+8. Task Breakdown
+9. Task Execution Loop: submission, acceptance, integration, and main-workspace verification
+10. Integration Validation
+11. Delivery
 
 Phase exit gates:
 
 - Project Rules exits only when implementation-relevant rules and conflicts are recorded and `project-rules.md` is `ready`.
-- Requirement Baseline exits only when the outcome, hard constraints/invariants, assumptions with evidence, open questions, requirements, and acceptance signals are confirmed and `requirements-baseline.md` is `confirmed`.
+- User Discovery exits only after the user has answered the outcome, audience, constraints, success signals, and non-goals questions, and those answers are recorded in `requirements-baseline.md`.
+- Requirement Baseline exits only when user discovery is confirmed and the outcome, hard constraints/invariants, assumptions with evidence, open questions, requirements, and acceptance signals are confirmed and `requirements-baseline.md` is `confirmed`.
 - System Design exits only when technology, interface, data/API, permissions, and verification decisions are sufficient for the scoped work and `system-design.md` is `ready`.
 - Task Breakdown exits only when every task has a complete contract and `task-plan.md` is `ready`.
 - Task Execution starts only after the execution-phase state check passes.
@@ -171,6 +174,19 @@ Before requirements or coding, read project-level rule files when present:
 - `README.md`
 
 Summarize implementation-relevant rules into `webbuilder/project-rules.md`. User instructions take priority over project rules; project rules take priority over this Skill; this Skill takes priority over default agent habits.
+
+## Mandatory User Discovery Gate
+
+Before filling `requirements-baseline.md`, `system-design.md`, or `task-plan.md`, pause and ask the user a concise batch of clarifying questions. Do not treat `spec.md`, README files, existing code, or inferred conventions as user confirmation; they are evidence to discuss, not answers to invent.
+
+Ask at minimum:
+
+- What outcome should be delivered, and who is it for?
+- What are the must-have requirements and explicit non-goals?
+- What constraints, integrations, data, permissions, or compatibility requirements must be preserved?
+- How will the user recognize success, and what should be deferred?
+
+Use the host's structured question UI when available. Otherwise ask these questions directly in the conversation and wait for the user's response. Record the answers under `User Discovery` and set `discovery_status: confirmed` only after the user responds. If the user has already supplied explicit answers in the current request, summarize them back for confirmation before proceeding; do not silently skip the gate.
 
 ## First-Principles and Review
 
@@ -324,13 +340,12 @@ Use finite repair loops:
 
 Each repair must cite new evidence, change one main cause, rerun verification, and update `validation-log.md`. If fixing requires changing confirmed requirements, expanding scope, adding high-risk dependencies, using real credentials, or creating paid resources, stop and ask the user.
 
-## Optional Superpowers
+## Superpowers
 
-Superpowers are optional step-level helpers, not the workflow owner.
+Superpowers remain helpers, not the workflow owner. The requirement-baseline helper is mandatory when it is available: invoke `superpowers:brainstorming` during the User Discovery Gate before confirming requirements. If it is unavailable, perform the same discovery questions natively; the absence of the helper is never a reason to skip user clarification.
 
-Use them when available:
+Use the other helpers when available:
 
-- requirement baseline: `superpowers:brainstorming`
 - task planning: `superpowers:writing-plans`
 - debugging and repair: `superpowers:systematic-debugging`
 - completion claims: `superpowers:verification-before-completion`
