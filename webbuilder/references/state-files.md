@@ -50,6 +50,8 @@ Use `transition-state.py --event <event>` for lifecycle changes. Lifecycle event
 
 `edit-descriptive-content --set <file:key=value>` is the sole generic update form. It rejects every lifecycle control key, including statuses, readiness, task selection, stop/resume, revision, pending-transition, and orchestration fields. Each lifecycle event validates its source and target status plus its applicable gate before the journaled write.
 
+Readiness-success events validate a proposed state snapshot before writing: `mark-project-rules-ready` requires valid structure and no unchecked Sources Read entry; `confirm-user-discovery` requires valid structure and recorded decisions; `confirm-requirements`, `mark-system-design-ready`, and `mark-task-plan-ready` require valid structure with no checker-defined placeholder content; `complete-delivery-report` and `deliver` require the full delivery gate.
+
 Before every resume, recover and structure-check the State Kernel:
 
 ```text
