@@ -922,6 +922,33 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                     (state_dir / name).read_text(encoding="utf-8"), before[name]
                 )
 
+    def test_transition_rejects_line_breaks_in_descriptive_updates(self) -> None:
+        cases = (
+            "loop-state.md\n:note=ordinary",
+            "loop-state.md:no\nte=ordinary",
+            "loop-state.md:note=ordinary\nstatus: delivered",
+            "loop-state.md\r:note=ordinary",
+            "loop-state.md:no\rte=ordinary",
+            "loop-state.md:note=ordinary\rstatus: delivered",
+        )
+        for update in cases:
+            with self.subTest(update=repr(update)), tempfile.TemporaryDirectory() as tmp:
+                self.assertEqual(self.run_init(tmp).returncode, 0)
+                loop_state = Path(tmp) / STATE_DIR_NAME / "loop-state.md"
+                before = loop_state.read_bytes()
+
+                result = self.run_transition(
+                    tmp,
+                    "--event",
+                    "edit-descriptive-content",
+                    "--set",
+                    update,
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("line breaks are not allowed", result.stdout)
+                self.assertEqual(loop_state.read_bytes(), before)
+
     def test_transition_allows_descriptive_content_updates(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(self.run_init(tmp).returncode, 0)
@@ -937,6 +964,79 @@ class Spec2WebStateScriptTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("custom_note: recorded", design.read_text(encoding="utf-8"))
+
+    def test_readiness_transitions_reject_incomplete_artifacts(self) -> None:
+        cases = (
+            (
+                "mark-project-rules-ready",
+                (),
+                "project-rules.md Sources Read checklist has unchecked entries",
+                "project-rules.md",
+            ),
+            (
+                "confirm-requirements",
+                ("requirements-baseline.md:discovery_status=confirmed",),
+                "requirements-baseline.md contains placeholder content",
+                "requirements-baseline.md",
+            ),
+            (
+                "mark-system-design-ready",
+                (),
+                "system-design.md contains placeholder content",
+                "system-design.md",
+            ),
+            (
+                "mark-task-plan-ready",
+                (),
+                "task-plan.md contains placeholder content",
+                "task-plan.md",
+            ),
+        )
+        for event, setup, expected, filename in cases:
+            with self.subTest(event=event), tempfile.TemporaryDirectory() as tmp:
+                self.assertEqual(self.run_init(tmp).returncode, 0)
+                state_dir = Path(tmp) / STATE_DIR_NAME
+                for replacement in setup:
+                    name, key_value = replacement.split(":", maxsplit=1)
+                    key, value = key_value.split("=", maxsplit=1)
+                    path = state_dir / name
+                    path.write_text(
+                        re.sub(
+                            rf"(?m)^{re.escape(key)}:\s*.*$",
+                            f"{key}: {value}",
+                            path.read_text(encoding="utf-8"),
+                        ),
+                        encoding="utf-8",
+                    )
+                target = state_dir / filename
+                before = target.read_bytes()
+
+                result = self.run_transition(tmp, "--event", event)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected, result.stdout)
+                self.assertEqual(target.read_bytes(), before)
+
+    def test_confirm_user_discovery_rejects_an_invalid_state_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            requirements = Path(tmp) / STATE_DIR_NAME / "requirements-baseline.md"
+            requirements.write_text(
+                requirements.read_text(encoding="utf-8")
+                .replace("- not recorded", "- recorded")
+                .replace("## First-Principles Analysis", "## Missing Analysis"),
+                encoding="utf-8",
+            )
+            before = requirements.read_bytes()
+
+            result = self.run_transition(tmp, "--event", "confirm-user-discovery")
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "requirements-baseline.md missing marker: ## First-Principles Analysis",
+                result.stdout,
+            )
+            self.assertEqual(requirements.read_bytes(), before)
 
     def test_accept_task_transition_requires_submitted_source_and_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

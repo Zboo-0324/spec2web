@@ -76,6 +76,8 @@ LIFECYCLE_EVENTS = {
 
 
 def parse_update(value: str) -> tuple[str, str, str]:
+    if "\r" in value or "\n" in value:
+        raise ValueError("invalid --set value: line breaks are not allowed")
     name, separator, assignment = value.partition(":")
     key, equals, field_value = assignment.partition("=")
     if not separator or not name or not equals or not key:
@@ -157,6 +159,18 @@ def require_gate(
         raise ValueError("; ".join(errors))
 
 
+def require_artifact_readiness(state_dir: Path, filename: str, updated: str) -> None:
+    checker = load_checker()
+    errors = checker_errors(state_dir, {filename: updated}, "structure")
+    fragments = checker.PLACEHOLDER_FRAGMENTS.get(filename, [])
+    if any(fragment in updated.lower() for fragment in fragments):
+        errors.append(f"{filename} contains placeholder content")
+    if filename == "project-rules.md" and "- [ ]" in updated:
+        errors.append("project-rules.md Sources Read checklist has unchecked entries")
+    if errors:
+        raise ValueError("; ".join(errors))
+
+
 def descriptive_updates(state_dir: Path, sets: list[str]) -> dict[str, str]:
     if not sets:
         raise ValueError("edit-descriptive-content requires at least one --set")
@@ -197,6 +211,8 @@ def lifecycle_updates(state_dir: Path, args: argparse.Namespace) -> dict[str, st
                 {filename: updated, "loop-state.md": delivery_loop},
                 "delivery",
             )
+        else:
+            require_artifact_readiness(state_dir, filename, updated)
         return {filename: updated}
 
     if args.event == "confirm-user-discovery":
@@ -204,13 +220,21 @@ def lifecycle_updates(state_dir: Path, args: argparse.Namespace) -> dict[str, st
         require_top_level_value(text, "discovery_status", {"pending"}, "requirements-baseline.md")
         if re.search(r"(?mi)^- not recorded\s*$", text):
             raise ValueError("requirements-baseline.md user discovery decisions are not recorded")
-        return {"requirements-baseline.md": set_top_level_value(text, "discovery_status", "confirmed")}
+        updated = set_top_level_value(text, "discovery_status", "confirmed")
+        require_gate(
+            state_dir,
+            {"requirements-baseline.md": updated},
+            "structure",
+        )
+        return {"requirements-baseline.md": updated}
 
     if args.event == "confirm-requirements":
         text = (state_dir / "requirements-baseline.md").read_text(encoding="utf-8")
         require_top_level_value(text, "status", {"draft"}, "requirements-baseline.md")
         require_top_level_value(text, "discovery_status", {"confirmed"}, "requirements-baseline.md")
-        return {"requirements-baseline.md": set_top_level_value(text, "status", "confirmed")}
+        updated = set_top_level_value(text, "status", "confirmed")
+        require_artifact_readiness(state_dir, "requirements-baseline.md", updated)
+        return {"requirements-baseline.md": updated}
 
     if args.event == "start-task":
         task_id = require_task(args)
