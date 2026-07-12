@@ -500,24 +500,24 @@ class Spec2WebStateScriptTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("allowed_paths overlap", result.stdout)
 
-    def test_acceptance_gate_requires_independent_evidence(self) -> None:
+    def test_acceptance_allows_one_independent_checker_for_standard_work(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(self.run_init(tmp).returncode, 0)
             self.make_execution_ready(tmp)
             state_dir = Path(tmp) / STATE_DIR_NAME
             task_plan = state_dir / "task-plan.md"
-            task_plan.write_text(
-                task_plan.read_text(encoding="utf-8").replace(
-                    "status: pending", "status: submitted_for_acceptance"
-                ),
-                encoding="utf-8",
+            text = task_plan.read_text(encoding="utf-8")
+            text = text.replace("status: pending", "status: submitted_for_acceptance")
+            text = text.replace(
+                "checker_strategy: single_session", "checker_strategy: independent_checker"
             )
+            task_plan.write_text(text, encoding="utf-8")
             (state_dir / "validation-log.md").write_text(
                 "# Validation Log\n\n## Entries\n\n### TASK-001 / acceptance\n\n"
                 "- gate: acceptance\n- task_status: submitted_for_acceptance\n"
                 "- submission_commit: direct_apply\n- developer_identity: developer\n"
-                "- tester_identity: tester\n- tester_result: passed\n"
-                "- reviewer_identity: reviewer\n- reviewer_result: approved\n"
+                "- tester_identity: checker\n- tester_result: passed\n"
+                "- reviewer_identity: checker\n- reviewer_result: approved\n"
                 "- adversarial_cases_expected: not_applicable\n"
                 "- adversarial_cases_passed: not_applicable\n"
                 "- disagreement_status: none\n- orchestrator_decision: accepted\n"
@@ -525,19 +525,45 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            passed = self.run_check(tmp, "acceptance", task="TASK-001")
+            result = self.run_check(tmp, "acceptance", task="TASK-001")
 
-            self.assertEqual(passed.returncode, 0, passed.stdout + passed.stderr)
-            log = state_dir / "validation-log.md"
-            log.write_text(
-                log.read_text(encoding="utf-8").replace(
-                    "reviewer_identity: reviewer", "reviewer_identity: tester"
-                ),
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_acceptance_requires_three_identities_for_separate_strategy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            self.make_execution_ready(tmp)
+            state_dir = Path(tmp) / STATE_DIR_NAME
+            task_plan = state_dir / "task-plan.md"
+            text = task_plan.read_text(encoding="utf-8")
+            text = text.replace("status: pending", "status: submitted_for_acceptance")
+            text = text.replace("risk_level: low", "risk_level: high")
+            text = text.replace(
+                "checker_strategy: single_session",
+                "checker_strategy: separate_tester_reviewer",
+            )
+            text = text.replace("review_mode: standard", "review_mode: adversarial")
+            text = text.replace("  - not_applicable", "  - CASE-001", 1)
+            task_plan.write_text(text, encoding="utf-8")
+            (state_dir / "validation-log.md").write_text(
+                "# Validation Log\n\n## Entries\n\n### TASK-001 / acceptance\n\n"
+                "- gate: acceptance\n- task_status: submitted_for_acceptance\n"
+                "- submission_commit: abc123\n- developer_identity: developer\n"
+                "- tester_identity: checker\n- tester_result: passed\n"
+                "- reviewer_identity: checker\n- reviewer_result: approved\n"
+                "- adversarial_cases_expected: CASE-001\n"
+                "- adversarial_cases_passed: CASE-001\n"
+                "- disagreement_status: none\n- orchestrator_decision: accepted\n"
+                "- residual_risk: none\n",
                 encoding="utf-8",
             )
-            rejected = self.run_check(tmp, "acceptance", task="TASK-001")
-            self.assertNotEqual(rejected.returncode, 0)
-            self.assertIn("identities must differ", rejected.stdout)
+
+            result = self.run_check(tmp, "acceptance", task="TASK-001")
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "separate_tester_reviewer requires distinct identities", result.stdout
+            )
 
     def test_integration_gate_requires_main_workspace_verification(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -617,14 +643,14 @@ class Spec2WebStateScriptTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("shared_resources conflict: database:app", result.stdout)
 
-    def test_task_gate_rejects_repair_budget_and_repeated_fingerprint(self) -> None:
+    def test_task_gate_blocks_repeated_task_fingerprint(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(self.run_init(tmp).returncode, 0)
             self.make_execution_ready(tmp)
             task_plan = Path(tmp) / STATE_DIR_NAME / "task-plan.md"
             task_plan.write_text(
                 task_plan.read_text(encoding="utf-8")
-                .replace("task_repair_attempt: 0", "task_repair_attempt: 4")
+                .replace("task_repair_attempt: 0", "task_repair_attempt: 2")
                 .replace(
                     "task_same_fingerprint_count: 0",
                     "task_same_fingerprint_count: 3",
@@ -636,8 +662,45 @@ class Spec2WebStateScriptTests(unittest.TestCase):
             result = self.run_check(tmp, "task", task="TASK-001")
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("task_repair_attempt exceeds repair_budget", result.stdout)
-            self.assertIn("repeated failure fingerprint requires block", result.stdout)
+            self.assertIn(
+                "repeated task failure fingerprint requires block", result.stdout
+            )
+
+    def test_integration_gate_enforces_its_own_repair_budget(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            self.make_execution_ready(tmp)
+            state_dir = Path(tmp) / STATE_DIR_NAME
+            task_plan = state_dir / "task-plan.md"
+            task_plan.write_text(
+                task_plan.read_text(encoding="utf-8")
+                .replace("status: pending", "status: accepted")
+                .replace("handoff_mode: pr_worktree", "handoff_mode: single_session")
+                .replace(
+                    "integration_strategy: squash_merge",
+                    "integration_strategy: direct_apply",
+                )
+                .replace("task_repair_attempt: 0", "task_repair_attempt: 2")
+                .replace(
+                    "integration_repair_attempt: 0",
+                    "integration_repair_attempt: 6",
+                ),
+                encoding="utf-8",
+            )
+            (state_dir / "validation-log.md").write_text(
+                "# Validation Log\n\n## Entries\n\n### TASK-001 / integration\n\n"
+                "- gate: integration\n- integration_strategy: direct_apply\n"
+                "- integration_commit: direct_apply\n"
+                "- main_workspace_verification: passed\n"
+                "- verification_evidence: python -m unittest\n"
+                "- final_task_status: complete\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_check(tmp, "integration", task="TASK-001")
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("integration_repair_attempt exceeds budget 5", result.stdout)
 
     def test_delivery_check_requires_terminal_state_and_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

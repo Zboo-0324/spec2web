@@ -498,25 +498,20 @@ def incomplete_dependency_errors(
     return errors
 
 
-def repair_state_errors(task_id: str, body: str) -> list[str]:
+def repair_scope_errors(task_id: str, body: str, scope: str, budget: int) -> list[str]:
     errors: list[str] = []
-    repair_budget = task_field_value(body, "repair_budget")
-    repair_attempt = task_field_value(body, "task_repair_attempt")
-    same_fingerprint_count = task_field_value(body, "task_same_fingerprint_count")
-    if (
-        repair_budget is not None
-        and repair_attempt is not None
-        and repair_budget.isdigit()
-        and repair_attempt.isdigit()
-        and int(repair_attempt) > int(repair_budget)
-    ):
-        errors.append(f"{task_id} task_repair_attempt exceeds repair_budget")
-    if (
-        same_fingerprint_count is not None
-        and same_fingerprint_count.isdigit()
-        and int(same_fingerprint_count) >= 3
-    ):
-        errors.append(f"{task_id} repeated failure fingerprint requires block")
+    attempt = task_field_value(body, f"{scope}_repair_attempt")
+    repeated = task_field_value(body, f"{scope}_same_fingerprint_count")
+    if attempt is None or not attempt.isdigit():
+        errors.append(f"{task_id} {scope}_repair_attempt must be a non-negative integer")
+    elif int(attempt) > budget:
+        errors.append(f"{task_id} {scope}_repair_attempt exceeds budget {budget}")
+    if repeated is None or not repeated.isdigit():
+        errors.append(
+            f"{task_id} {scope}_same_fingerprint_count must be a non-negative integer"
+        )
+    elif int(repeated) >= 3:
+        errors.append(f"{task_id} repeated {scope} failure fingerprint requires block")
     return errors
 
 
@@ -613,7 +608,7 @@ def check_task_readiness(state_dir: Path, task_id: str | None) -> list[str]:
             f"{selected_workers} > {available_slots}"
         )
 
-    errors.extend(repair_state_errors(task_id, body))
+    errors.extend(repair_scope_errors(task_id, body, "task", 3))
 
     return errors
 
@@ -692,7 +687,7 @@ def check_parallel_readiness(
                 f"{task_id} status must be pending or needs_repair for parallel start"
             )
         errors.extend(incomplete_dependency_errors(task_id, body, tasks))
-        errors.extend(repair_state_errors(task_id, body))
+        errors.extend(repair_scope_errors(task_id, body, "task", 3))
 
         if task_field_value(body, "handoff_mode") != "pr_worktree":
             errors.append(f"{task_id} parallel task requires handoff_mode: pr_worktree")
@@ -862,15 +857,26 @@ def check_acceptance_readiness(state_dir: Path, task_id: str | None) -> list[str
     if record_value(record, "disagreement_status") == "unresolved":
         errors.append(f"{task_id} acceptance record has unresolved reviewer disagreement")
 
-    identities = [
-        record_value(record, "developer_identity"),
-        record_value(record, "tester_identity"),
-        record_value(record, "reviewer_identity"),
-    ]
-    if all(usable_evidence(identity) for identity in identities) and len(set(identities)) != 3:
-        errors.append(f"{task_id} Developer, Tester, and Reviewer identities must differ")
-
     risk_level = task_field_value(body, "risk_level")
+    developer = record_value(record, "developer_identity")
+    tester = record_value(record, "tester_identity")
+    reviewer = record_value(record, "reviewer_identity")
+    checker_strategy = task_field_value(body, "checker_strategy")
+
+    if checker_strategy == "independent_checker":
+        if usable_evidence(developer) and developer in {tester, reviewer}:
+            errors.append(f"{task_id} independent checker must differ from Developer")
+    elif checker_strategy == "separate_tester_reviewer":
+        identities = [developer, tester, reviewer]
+        if all(usable_evidence(value) for value in identities) and len(set(identities)) != 3:
+            errors.append(
+                f"{task_id} separate_tester_reviewer requires distinct identities"
+            )
+    elif checker_strategy == "single_session" and risk_level not in {"low"}:
+        errors.append(f"{task_id} single_session acceptance is limited to low-risk work")
+
+    errors.extend(repair_scope_errors(task_id, body, "task", 3))
+
     if risk_level in {"high", "critical"}:
         expected = record_values(record, "adversarial_cases_expected")
         passed = record_values(record, "adversarial_cases_passed")
@@ -925,6 +931,7 @@ def check_integration_readiness(state_dir: Path, task_id: str | None) -> list[st
         errors.append(f"{task_id} main_workspace_verification must be passed")
     if record_value(record, "final_task_status") != "complete":
         errors.append(f"{task_id} integration final_task_status must be complete")
+    errors.extend(repair_scope_errors(task_id, body, "integration", 5))
     return errors
 
 
