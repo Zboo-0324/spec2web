@@ -9,6 +9,11 @@ from pathlib import Path
 from state_schema import SCHEMA_VERSION, STATE_DIR_NAME
 
 
+STATE_GITIGNORE = """.transitions/
+.migration-backup-*/
+"""
+
+
 TEMPLATES = {
     "project-rules.md": """# Project Rules
 
@@ -269,9 +274,12 @@ For non-Git or single-session tasks, pair `handoff_mode: single_session` with `i
   - none
 - integration_dependencies:
   - none
-- repair_attempt: 0
-- last_failure_fingerprint: none
-- same_fingerprint_count: 0
+- task_repair_attempt: 0
+- task_failure_fingerprint: none
+- task_same_fingerprint_count: 0
+- integration_repair_attempt: 0
+- integration_failure_fingerprint: none
+- integration_same_fingerprint_count: 0
 - integration_policy: orchestrator_review_then_serial_integration
 """,
     "loop-state.md": f"""# Loop State
@@ -282,6 +290,13 @@ status: active
 current_phase: project_rules
 current_task: null
 active_parallel_group: null
+delivery_mode: guided
+autonomy_scope: unconfirmed
+stop_reason: none
+resume_checkpoint: none
+active_run_id: null
+state_revision: 1
+pending_transition: null
 execution_mode: single
 host_agent_capability: unknown
 available_child_slots: unknown
@@ -364,6 +379,13 @@ def initialize(target: Path) -> tuple[list[Path], list[Path]]:
             continue
         path.write_text(content, encoding="utf-8", newline="\n")
         created.append(path)
+
+    gitignore = state_dir / ".gitignore"
+    if gitignore.exists():
+        skipped.append(gitignore)
+    else:
+        gitignore.write_text(STATE_GITIGNORE, encoding="utf-8", newline="\n")
+        created.append(gitignore)
 
     return created, skipped
 

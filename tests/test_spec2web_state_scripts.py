@@ -216,6 +216,66 @@ class Spec2WebStateScriptTests(unittest.TestCase):
             self.assertIn("active_checker_strategy: single_session", loop_state)
             self.assertIn("## Shared Contract Paths", task_plan)
 
+    def test_init_creates_schema_1_4_runtime_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            loop = (Path(tmp) / STATE_DIR_NAME / "loop-state.md").read_text(
+                encoding="utf-8"
+            )
+            for marker in (
+                "schema_version: 1.4",
+                "delivery_mode: guided",
+                "autonomy_scope: unconfirmed",
+                "stop_reason: none",
+                "resume_checkpoint: none",
+                "active_run_id: null",
+                "state_revision: 1",
+                "pending_transition: null",
+            ):
+                self.assertIn(marker, loop)
+
+    def test_init_creates_and_preserves_state_gitignore(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            subprocess.run(["git", "init", "--quiet", tmp], check=True)
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            state_dir = Path(tmp) / STATE_DIR_NAME
+            gitignore = state_dir / ".gitignore"
+
+            self.assertEqual(
+                subprocess.run(
+                    ["git", "-C", tmp, "check-ignore", "-q", "webbuilder/.transitions/"],
+                    check=False,
+                ).returncode,
+                0,
+            )
+            self.assertEqual(
+                subprocess.run(
+                    ["git", "-C", tmp, "check-ignore", "-q", "webbuilder/.migration-backup-test/"],
+                    check=False,
+                ).returncode,
+                0,
+            )
+
+            gitignore.write_text("custom-ignore/\n", encoding="utf-8")
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            self.assertEqual(gitignore.read_text(encoding="utf-8"), "custom-ignore/\n")
+
+    def test_structure_check_requires_schema_1_4_runtime_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            loop_state = Path(tmp) / STATE_DIR_NAME / "loop-state.md"
+            loop_state.write_text(
+                loop_state.read_text(encoding="utf-8").replace(
+                    "delivery_mode: guided\n", ""
+                ),
+                encoding="utf-8",
+            )
+
+            result = self.run_check(tmp)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("loop-state.md missing marker: delivery_mode:", result.stdout)
+
     def test_execution_check_rejects_initialized_draft_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(self.run_init(tmp).returncode, 0)
@@ -561,8 +621,11 @@ class Spec2WebStateScriptTests(unittest.TestCase):
             task_plan = Path(tmp) / STATE_DIR_NAME / "task-plan.md"
             task_plan.write_text(
                 task_plan.read_text(encoding="utf-8")
-                .replace("repair_attempt: 0", "repair_attempt: 4")
-                .replace("same_fingerprint_count: 0", "same_fingerprint_count: 3"),
+                .replace("task_repair_attempt: 0", "task_repair_attempt: 4")
+                .replace(
+                    "task_same_fingerprint_count: 0",
+                    "task_same_fingerprint_count: 3",
+                ),
                 encoding="utf-8",
             )
             self.set_loop_values(tmp, current_task="TASK-001")
@@ -570,7 +633,7 @@ class Spec2WebStateScriptTests(unittest.TestCase):
             result = self.run_check(tmp, "task", task="TASK-001")
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("repair_attempt exceeds repair_budget", result.stdout)
+            self.assertIn("task_repair_attempt exceeds repair_budget", result.stdout)
             self.assertIn("repeated failure fingerprint requires block", result.stdout)
 
     def test_delivery_check_requires_terminal_state_and_evidence(self) -> None:
@@ -795,6 +858,75 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                 {"loop-state.md", "task-plan.md"},
             )
             self.assertEqual(self.run_check(tmp).returncode, 0)
+
+            repeated = subprocess.run(
+                [sys.executable, str(MIGRATE_SCRIPT), "--target", tmp],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(repeated.returncode, 0, repeated.stdout + repeated.stderr)
+            self.assertIn("Spec2Web state already uses schema 1.4", repeated.stdout)
+            self.assertEqual(len(list(state_dir.glob(".migration-backup-*"))), 1)
+
+    def test_migrate_state_upgrades_v13_runtime_fields_transactionally(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.run_init(tmp).returncode, 0)
+            state_dir = Path(tmp) / STATE_DIR_NAME
+            loop_state = state_dir / "loop-state.md"
+            task_plan = state_dir / "task-plan.md"
+            source_loop = loop_state.read_text(encoding="utf-8").replace(
+                "schema_version: 1.4", "schema_version: 1.3"
+            )
+            source_loop = re.sub(
+                r"(?m)^(delivery_mode|autonomy_scope|stop_reason|resume_checkpoint|"
+                r"active_run_id|state_revision|pending_transition):.*\n",
+                "",
+                source_loop,
+            )
+            loop_state.write_text(
+                source_loop + "custom-note: preserve-me\n",
+                encoding="utf-8",
+            )
+            task_plan.write_text(
+                task_plan.read_text(encoding="utf-8")
+                .replace("task_repair_attempt", "repair_attempt")
+                .replace("task_failure_fingerprint", "last_failure_fingerprint")
+                .replace("task_same_fingerprint_count", "same_fingerprint_count")
+                .replace("integration_repair_attempt", "repair_attempt")
+                .replace(
+                    "integration_failure_fingerprint", "last_failure_fingerprint"
+                )
+                .replace(
+                    "integration_same_fingerprint_count", "same_fingerprint_count"
+                ),
+                encoding="utf-8",
+            )
+
+            applied = subprocess.run(
+                [sys.executable, str(MIGRATE_SCRIPT), "--target", tmp],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(applied.returncode, 0, applied.stdout + applied.stderr)
+            migrated_loop = loop_state.read_text(encoding="utf-8")
+            migrated_plan = task_plan.read_text(encoding="utf-8")
+            self.assertIn("schema_version: 1.4", migrated_loop)
+            self.assertIn("delivery_mode: guided", migrated_loop)
+            self.assertIn("custom-note: preserve-me", migrated_loop)
+            self.assertIn("state_revision: 1", migrated_loop)
+            for marker in (
+                "task_repair_attempt: 0",
+                "task_failure_fingerprint: none",
+                "task_same_fingerprint_count: 0",
+                "integration_repair_attempt: 0",
+                "integration_failure_fingerprint: none",
+                "integration_same_fingerprint_count: 0",
+            ):
+                self.assertIn(marker, migrated_plan)
+            self.assertEqual(len(list(state_dir.glob(".migration-backup-*"))), 1)
 
             repeated = subprocess.run(
                 [sys.executable, str(MIGRATE_SCRIPT), "--target", tmp],

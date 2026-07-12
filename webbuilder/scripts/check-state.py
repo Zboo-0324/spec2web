@@ -46,9 +46,12 @@ TASK_FIELDS = [
     "shared_resources",
     "conflict_domains",
     "integration_dependencies",
-    "repair_attempt",
-    "last_failure_fingerprint",
-    "same_fingerprint_count",
+    "task_repair_attempt",
+    "task_failure_fingerprint",
+    "task_same_fingerprint_count",
+    "integration_repair_attempt",
+    "integration_failure_fingerprint",
+    "integration_same_fingerprint_count",
     "integration_policy",
 ]
 
@@ -57,6 +60,13 @@ LOOP_STATE_MARKERS = [
     "schema_version:",
     "status:",
     "current_phase:",
+    "delivery_mode:",
+    "autonomy_scope:",
+    "stop_reason:",
+    "resume_checkpoint:",
+    "active_run_id:",
+    "state_revision:",
+    "pending_transition:",
     "execution_mode:",
     "host_agent_capability:",
     "available_child_slots:",
@@ -424,7 +434,12 @@ def check_structure(state_dir: Path) -> list[str]:
                 allowed = ", ".join(sorted(VALID_USER_APPROVALS))
                 errors.append(f"{task_id} user_approval must be one of: {allowed}")
 
-            for field in ("repair_attempt", "same_fingerprint_count"):
+            for field in (
+                "task_repair_attempt",
+                "task_same_fingerprint_count",
+                "integration_repair_attempt",
+                "integration_same_fingerprint_count",
+            ):
                 value = task_field_value(body, field)
                 try:
                     valid_value = value is not None and int(value) >= 0
@@ -486,8 +501,8 @@ def incomplete_dependency_errors(
 def repair_state_errors(task_id: str, body: str) -> list[str]:
     errors: list[str] = []
     repair_budget = task_field_value(body, "repair_budget")
-    repair_attempt = task_field_value(body, "repair_attempt")
-    same_fingerprint_count = task_field_value(body, "same_fingerprint_count")
+    repair_attempt = task_field_value(body, "task_repair_attempt")
+    same_fingerprint_count = task_field_value(body, "task_same_fingerprint_count")
     if (
         repair_budget is not None
         and repair_attempt is not None
@@ -495,7 +510,7 @@ def repair_state_errors(task_id: str, body: str) -> list[str]:
         and repair_attempt.isdigit()
         and int(repair_attempt) > int(repair_budget)
     ):
-        errors.append(f"{task_id} repair_attempt exceeds repair_budget")
+        errors.append(f"{task_id} task_repair_attempt exceeds repair_budget")
     if (
         same_fingerprint_count is not None
         and same_fingerprint_count.isdigit()
