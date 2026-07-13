@@ -431,9 +431,49 @@ Use the other helpers when available:
 
 All outputs from external Skills must be written back to Spec2Web state files. External Skills may not skip requirements baseline, task breakdown, validation logging, or delivery reporting.
 
+## Evidence Capture
+
+Before integration and delivery, capture machine-verifiable evidence of verification commands:
+
+```text
+python <skill-root>/scripts/capture-evidence.py --target <project-root> --run-id <RUN-ID> --subject-id <TASK-ID> --attempt <N> --contract-revision <REV> -- <command>
+```
+
+Evidence manifests are stored under `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` with relative project paths. Each manifest records the command, exit code, implementation fingerprint, artifact hashes, and redaction status.
+
+Workers capture evidence in their task worktree. Orchestrator promotes evidence to the main workspace before integration using the `promote_artifacts` function, which copies artifacts and rewrites paths to be project-relative.
+
+## Redaction Policy
+
+All captured evidence is automatically redacted before writing. The redactor strips authorization headers, Cookie headers, and secret-bearing assignment patterns from command output. Pass `--explicit-secrets <value>` to redact additional tokens. If redaction fails, the manifest records `redaction.status: failed` and the delivery gate rejects it.
+
+Authorization header values (Bearer tokens, Basic credentials, API keys in headers) are always redacted regardless of `--explicit-secrets`.
+
+## Host Capability Check
+
+Before dispatching tasks that require specific host capabilities (UI, database, docker, etc.), verify the host can support them:
+
+```text
+python <skill-root>/scripts/check-host.py --target <project-root> --phase host
+python <skill-root>/scripts/check-host.py --target <project-root> --phase initialization
+python <skill-root>/scripts/check-host.py --target <project-root> --phase ui
+```
+
+- `host` validates that all capabilities marked `required` in the contract have `available` status with evidence in `loop-state.md`.
+- `initialization` validates that required capabilities have evidence but allows `not_applicable` capabilities to lack evidence.
+- `ui` validates that UI-specific evidence manifests exist when the contract declares `ui` as `required`.
+
+Record host capability evidence in the `## Host Capabilities` section of `loop-state.md` as a JSON block with status and evidence for each capability.
+
+## Manifest-Backed Final Delivery
+
+The delivery gate now verifies that every required verification domain has a valid evidence manifest. Handwritten "passed" text in `validation-log.md` is not sufficient; each delivery domain (`functional`, `security`, `performance`, `delivery-smoke`, and `ui`/`accessibility` when applicable) must have a `PROJECT / <domain>` entry referencing an `artifact_manifest` path under `.webbuilder-artifacts/`.
+
+The delivery gate verifies each manifest: artifact hashes must match, the contract revision must be current, the implementation fingerprint must match, redaction must have passed, and the result must be `passed`.
+
 ## Delivery
 
-Before final delivery, run the project-specific verification commands, update `validation-log.md`, generate `delivery-report.md`, mark its status `complete`, set terminal workflow state, and run:
+Before final delivery, run the project-specific verification commands, capture evidence, update `validation-log.md`, generate `delivery-report.md`, mark its status `complete`, set terminal workflow state, and run:
 
 ```text
 python <skill-root>/scripts/check-state.py --target <project-root> --phase delivery

@@ -71,6 +71,8 @@ webbuilder/
   scripts/
     init-state.py
     check-state.py
+    check-host.py
+    capture-evidence.py
     migrate-state.py
     transition-state.py
     approve-contract.py
@@ -209,11 +211,29 @@ python webbuilder/scripts/transition-state.py --target . --recover
 python webbuilder/scripts/check-state.py --target . --phase structure
 ```
 
+Capture verification evidence:
+
+```powershell
+python webbuilder/scripts/capture-evidence.py --target . --run-id RUN-1 --subject-id TASK-001 --attempt 1 --contract-revision 1 -- python -m unittest
+```
+
+Evidence is stored under `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` with manifest.json and command output. All evidence is automatically redacted for authorization headers, cookies, and explicit secrets.
+
+Check host capabilities:
+
+```powershell
+python webbuilder/scripts/check-host.py --target . --phase host
+python webbuilder/scripts/check-host.py --target . --phase initialization
+python webbuilder/scripts/check-host.py --target . --phase ui
+```
+
 Before final delivery, run the delivery gate:
 
 ```powershell
 python webbuilder/scripts/check-state.py --target . --phase delivery
 ```
+
+The delivery gate verifies that valid evidence manifests exist under `.webbuilder-artifacts/` for every required verification domain.
 
 The checker has eight validation phases:
 

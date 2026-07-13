@@ -134,6 +134,28 @@ Give each worker only:
 
 Workers submit and stop. They do not integrate, expand scope, spawn unplanned workers, or decide completion.
 
+## Evidence Capture
+
+Workers capture verification evidence using `capture-evidence.py` in their task worktree:
+
+```text
+python <skill-root>/scripts/capture-evidence.py --target <project-root> --run-id <RUN-ID> --subject-id <TASK-ID> --attempt <N> --contract-revision <REV> -- <command>
+```
+
+Evidence is stored under `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` with project-relative paths. The manifest records the command, exit code, implementation fingerprint, artifact hashes, redaction status, and result.
+
+Before integration, the Orchestrator promotes evidence from the worker worktree to the main workspace. Promotion copies artifacts and rewrites paths to remain project-relative. If the source manifest was tampered or the destination already exists with divergent content, promotion rejects the write.
+
+Host capability evidence is checked with `check-host.py`:
+
+```text
+python <skill-root>/scripts/check-host.py --target <project-root> --phase host
+python <skill-root>/scripts/check-host.py --target <project-root> --phase initialization
+python <skill-root>/scripts/check-host.py --target <project-root> --phase ui
+```
+
+Record host capabilities in the `## Host Capabilities` section of `loop-state.md`. All evidence output is automatically redacted for authorization headers, cookies, and explicit secrets.
+
 ## Integration Queue
 
 For each submitted task:

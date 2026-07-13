@@ -15,10 +15,14 @@ from contract_core import (
     validate_capabilities,
     validate_workload_envelope,
 )
+from evidence_core import git_fingerprint, verify_manifest
+from host_capabilities import capability_errors
 from state_schema import (
     REQUIRED_FILES,
     SCHEMA_VERSION,
     TASK_SECTION_PATTERN,
+    direct_apply_fingerprint,
+    markdown_section,
     resolve_state_dir,
     top_level_value,
 )
@@ -203,6 +207,35 @@ DELIVERY_PLACEHOLDERS = [
     "not recorded yet",
     "work has not started",
 ]
+
+CONTRACT_TO_HOST_CAPABILITY: dict[str, str] = {
+    "ui": "browser",
+    "docker": "docker",
+    "accessibility": "browser",
+}
+
+_DELIVERY_CORE_DOMAINS = ("functional", "security", "performance", "delivery-smoke")
+_DELIVERY_UI_DOMAINS = ("ui", "accessibility")
+
+
+def _delivery_applicable_domains(state_dir: Path) -> list[str]:
+    """Core delivery domains plus UI/accessibility when the contract requires UI."""
+    domains = list(_DELIVERY_CORE_DOMAINS)
+    requirements_text = read_text(state_dir, "requirements-baseline.md")
+    if not requirements_text:
+        return domains
+    try:
+        material = extract_contract_material(requirements_text)
+    except ValueError:
+        return domains
+    capabilities = material.get("capabilities", {})
+    if not isinstance(capabilities, dict):
+        return domains
+    ui_cap = capabilities.get("ui")
+    if isinstance(ui_cap, dict) and ui_cap.get("status") == "required":
+        domains.extend(_DELIVERY_UI_DOMAINS)
+    return domains
+
 
 def read_text(state_dir: Path, filename: str) -> str:
     path = state_dir / filename
@@ -1120,7 +1153,157 @@ def check_delivery_readiness(state_dir: Path) -> list[str]:
     if any(fragment in lowered_report for fragment in DELIVERY_PLACEHOLDERS):
         errors.append("delivery-report.md contains placeholder content")
 
+    # Verify evidence manifests for applicable delivery domains.
+    requirements_text = read_text(state_dir, "requirements-baseline.md")
+    contract_rev = None
+    if requirements_text:
+        contract_rev = integer_value(requirements_text, "approved_contract_revision")
+        if contract_rev is None:
+            contract_rev = integer_value(requirements_text, "contract_revision")
+
+    project_root = state_dir.parent
+    current_fingerprint = None
+    if (project_root / ".git").exists():
+        try:
+            current_fingerprint = git_fingerprint(project_root)
+        except Exception:
+            pass
+    else:
+        all_paths: list[str] = []
+        for _, body in TASK_SECTION_PATTERN.findall(task_plan):
+            all_paths.extend(task_list_values(body, "allowed_paths"))
+        if all_paths:
+            current_fingerprint = direct_apply_fingerprint(project_root, all_paths)
+
+    for domain in _delivery_applicable_domains(state_dir):
+        record = validation_record(validation_log, "PROJECT", domain)
+        if record is None or not recorded_value(record_value(record, "artifact_manifest")):
+            errors.append(f"missing artifact_manifest: PROJECT / {domain}")
+            continue
+        if contract_rev is None or current_fingerprint is None:
+            errors.append(
+                f"cannot verify manifest: PROJECT / {domain}: "
+                f"missing contract revision or implementation fingerprint"
+            )
+            continue
+        manifest_rel = record_value(record, "artifact_manifest")
+        manifest_path = project_root / manifest_rel
+        if not manifest_path.is_file():
+            errors.append(f"manifest file missing: PROJECT / {domain}")
+            continue
+        verify_errs = verify_manifest(
+            manifest_path,
+            project_root=project_root,
+            expected_contract_revision=contract_rev,
+            expected_fingerprint=current_fingerprint,
+        )
+        for verr in verify_errs:
+            errors.append(f"PROJECT / {domain}: {verr}")
+
     return errors
+
+
+_HOST_CAPABILITIES_JSON = re.compile(r"```json\s*\n(.*?)\n```", re.DOTALL)
+
+
+def _parse_host_capabilities(loop_state: str) -> dict[str, dict[str, str]]:
+    """Extract the Host Capabilities JSON block from loop-state.md."""
+    section = markdown_section(loop_state, "Host Capabilities")
+    if not section:
+        return {}
+    match = _HOST_CAPABILITIES_JSON.search(section)
+    if not match:
+        return {}
+    try:
+        return json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return {}
+
+
+def check_host_readiness(state_dir: Path) -> list[str]:
+    """Verify required host capabilities are available."""
+    errors: list[str] = []
+
+    loop_state = read_text(state_dir, "loop-state.md")
+    host_capabilities = _parse_host_capabilities(loop_state)
+    if not host_capabilities:
+        errors.append("loop-state.md missing Host Capabilities JSON block")
+        return errors
+
+    requirements_text = read_text(state_dir, "requirements-baseline.md")
+    if not requirements_text:
+        return errors
+
+    try:
+        material = extract_contract_material(requirements_text)
+    except ValueError:
+        return errors
+
+    capabilities = material.get("capabilities", {})
+    if not isinstance(capabilities, dict):
+        return errors
+
+    required: set[str] = set()
+    for cap_name, cap_entry in capabilities.items():
+        if isinstance(cap_entry, dict) and cap_entry.get("status") == "required":
+            host_cap = CONTRACT_TO_HOST_CAPABILITY.get(cap_name)
+            if host_cap:
+                required.add(host_cap)
+
+    errors.extend(capability_errors(required, host_capabilities))
+    return errors
+
+
+def check_ui_readiness(state_dir: Path, task_id: str | None) -> list[str]:
+    """Validate UI capability evidence for a task.
+
+    Returns ``[]`` when the contract marks UI as ``not_applicable``.
+    When UI is ``required`` the validation-log must contain a
+    ``<task_id>/ui`` record; absence yields an error mentioning
+    ``missing artifact_manifest``.
+    """
+    if not task_id:
+        return ["ui phase requires --task <TASK-ID>"]
+
+    requirements_text = read_text(state_dir, "requirements-baseline.md")
+    if not requirements_text:
+        return []
+
+    try:
+        material = extract_contract_material(requirements_text)
+    except ValueError:
+        return []
+
+    capabilities = material.get("capabilities", {})
+    if not isinstance(capabilities, dict):
+        return []
+
+    ui_cap = capabilities.get("ui")
+    if not isinstance(ui_cap, dict):
+        return []
+
+    if ui_cap.get("status") == "not_applicable":
+        return []
+
+    if ui_cap.get("status") != "required":
+        return []
+
+    validation_log = read_text(state_dir, "validation-log.md")
+    record = validation_record(validation_log, task_id, "ui")
+    if record is None:
+        return [f"{task_id} ui missing artifact_manifest"]
+
+    return []
+
+
+def check_initialization_readiness(state_dir: Path) -> list[str]:
+    """Verify host capabilities satisfy the approved contract.
+
+    Only capabilities marked ``required`` in the contract need host
+    evidence.  Capabilities marked ``not_applicable`` with documented
+    reasons are skipped — no startup evidence is expected for them.
+    """
+    return check_host_readiness(state_dir)
 
 
 def check_state(
@@ -1148,6 +1331,12 @@ def check_state(
         errors.extend(check_integration_readiness(state_dir, task_id))
     elif phase == "delivery":
         errors.extend(check_delivery_readiness(state_dir))
+    elif phase == "host":
+        errors.extend(check_host_readiness(state_dir))
+    elif phase == "ui":
+        errors.extend(check_ui_readiness(state_dir, task_id))
+    elif phase == "initialization":
+        errors.extend(check_initialization_readiness(state_dir))
     return errors
 
 
@@ -1171,6 +1360,9 @@ def main() -> int:
             "acceptance",
             "integration",
             "delivery",
+            "host",
+            "initialization",
+            "ui",
         ),
         default="structure",
         help=(
