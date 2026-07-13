@@ -327,6 +327,28 @@ def promote_artifacts(manifest_path: Path, destination_root: Path) -> Path:
                 raise ValueError(f"destination artifact missing: {rel_path}")
             if sha256_bytes(dest_file.read_bytes()) != sha:
                 raise ValueError(f"destination artifact content diverged: {rel_path}")
+
+        # Verify no unexpected files exist in the destination attempt directory.
+        expected_filenames = {"manifest.json"}
+        for rel_path, _, _, _ in validated:
+            expected_filenames.add(str(Path(rel_path).relative_to(dest_attempt_dir.relative_to(destination_root))))
+        actual_filenames = {
+            str(f.relative_to(dest_attempt_dir))
+            for f in dest_attempt_dir.rglob("*")
+            if f.is_file()
+        }
+        if actual_filenames != expected_filenames:
+            unexpected = sorted(actual_filenames - expected_filenames)
+            missing = sorted(expected_filenames - actual_filenames)
+            parts: list[str] = []
+            if unexpected:
+                parts.append(f"unexpected={unexpected}")
+            if missing:
+                parts.append(f"missing={missing}")
+            raise ValueError(
+                f"destination attempt directory content mismatch: {'; '.join(parts)}"
+            )
+
         return dest_manifest_path
 
     # Create destination and copy validated artifacts.

@@ -493,6 +493,24 @@ class EvidenceVerificationTests(unittest.TestCase):
                     divergent_bytes,
                 )
 
+    def test_promotion_rejects_unexpected_existing_destination_content(self) -> None:
+        """promote_artifacts must reject promotion when the destination attempt directory
+        contains an extra file not tracked in the manifest's artifact list."""
+        with tempfile.TemporaryDirectory() as worker_tmp:
+            worker = Path(worker_tmp)
+            manifest_path = self.capture_valid_manifest(worker)
+            with tempfile.TemporaryDirectory() as main_tmp:
+                main = Path(main_tmp)
+                promoted_path = promote_artifacts(manifest_path, main)
+
+                # Inject an unlisted file into the destination attempt directory.
+                dest_attempt_dir = promoted_path.parent
+                extra_file = dest_attempt_dir / "unexpected.txt"
+                extra_file.write_text("unexpected content\n", encoding="utf-8")
+
+                with self.assertRaises(ValueError):
+                    promote_artifacts(manifest_path, main)
+
 
 if __name__ == "__main__":
     unittest.main()
