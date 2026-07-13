@@ -27,3 +27,24 @@ class WorkItemFlowTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.post(reverse("workitems:list"), {"title": ""})
         self.assertContains(response, "Title is required", status_code=400)
+
+    def test_authenticated_list_page_offers_post_logout_control(self) -> None:
+        """The list page must present logout as a POST form, not a GET link.
+
+        Django 5.2 LogoutView only accepts POST (and OPTIONS); rendering
+        logout as a plain <a> link produces HTTP 405 Method Not Allowed.
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("workitems:list"))
+        logout_url = reverse("logout")
+        # The logout URL must appear in a <form action="…">, not an <a href="…">.
+        self.assertContains(
+            response,
+            f'action="{logout_url}"',
+            msg_prefix="Expected a <form> targeting the logout URL",
+        )
+        self.assertNotContains(
+            response,
+            f'href="{logout_url}"',
+            msg_prefix="Logout must not be a GET link",
+        )

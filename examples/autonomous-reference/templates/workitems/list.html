@@ -9,7 +9,13 @@
 <body>
     <main>
         <h1>Work Items</h1>
-        <p class="user-info">Signed in as {{ user.username }}. <a href="{% url 'logout' %}">Sign out</a></p>
+        <div class="user-info">
+            Signed in as {{ user.username }}.
+            <form method="post" action="{% url 'logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit">Sign out</button>
+            </form>
+        </div>
 
         <form method="post" action="{% url 'workitems:list' %}">
             {% csrf_token %}
