@@ -1,0 +1,29 @@
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+
+from .models import WorkItem
+
+
+class WorkItemFlowTests(TestCase):
+    def setUp(self) -> None:
+        self.user = get_user_model().objects.create_user("reviewer", password="review-pass")
+
+    def test_anonymous_user_is_redirected_to_login(self) -> None:
+        response = self.client.get(reverse("workitems:list"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('workitems:list')}")
+
+    def test_authenticated_user_can_create_and_complete_an_item(self) -> None:
+        self.client.force_login(self.user)
+        created = self.client.post(reverse("workitems:list"), {"title": "Review case 42"})
+        item = WorkItem.objects.get()
+        self.assertRedirects(created, reverse("workitems:list"))
+        completed = self.client.post(reverse("workitems:complete", args=[item.pk]))
+        self.assertRedirects(completed, reverse("workitems:list"))
+        item.refresh_from_db()
+        self.assertTrue(item.completed)
+
+    def test_empty_title_is_visible_validation_error(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("workitems:list"), {"title": ""})
+        self.assertContains(response, "Title is required", status_code=400)

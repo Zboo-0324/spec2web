@@ -62,6 +62,17 @@ python manage.py runserver 127.0.0.1:8000
 python -m unittest e2e.test_primary_flow -v
 ```
 
+## Expected Local-Only Security Warnings
+
+`python manage.py check --deploy` reports the following warnings for the local development reference application. These are expected and not suppressed because the reference runs locally only; production deployments must resolve all of them.
+
+- `security.W004` — SECURE_HSTS_SECONDS not set
+- `security.W008` — SECURE_SSL_REDIRECT not set
+- `security.W009` — SECRET_KEY is the insecure development default
+- `security.W012` — SESSION_COOKIE_SECURE not set
+- `security.W016` — CSRF_COOKIE_SECURE not set
+- `security.W018` — DEBUG is True
+
 ## Upgrade Policy
 
 Dependency pins are refreshed only through a PR that reruns the maintained example. The profile records the last validated pins and compatibility range; pins are not auto-bumped.
