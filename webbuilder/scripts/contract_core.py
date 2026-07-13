@@ -185,7 +185,7 @@ def validate_workload_envelope(workload: object) -> list[str]:
 
 
 def contract_revision_errors(state_dir: Path) -> list[str]:
-    """Check contract revision, digest, capabilities, workload, and derived document staleness."""
+    """Check contract revision, digest, and derived document staleness."""
     errors: list[str] = []
     requirements_path = state_dir / "requirements-baseline.md"
     if not requirements_path.exists():
@@ -195,15 +195,6 @@ def contract_revision_errors(state_dir: Path) -> list[str]:
         material = extract_contract_material(requirements_text)
     except ValueError as exc:
         return [str(exc)]
-
-    cap_errors = validate_capabilities(
-        material.get("capabilities", {}),
-        delivery_assumptions=material.get("delivery_assumptions"),
-    )
-    errors.extend(cap_errors)
-
-    wl_errors = validate_workload_envelope(material.get("workload_envelope", {}))
-    errors.extend(wl_errors)
 
     errors.extend(_check_approval_revision(requirements_text, material))
 

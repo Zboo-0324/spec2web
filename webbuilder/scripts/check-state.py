@@ -9,7 +9,12 @@ import re
 from itertools import combinations
 from pathlib import Path
 
-from contract_core import contract_revision_errors, extract_contract_material
+from contract_core import (
+    contract_revision_errors,
+    extract_contract_material,
+    validate_capabilities,
+    validate_workload_envelope,
+)
 from state_schema import (
     REQUIRED_FILES,
     SCHEMA_VERSION,
@@ -548,6 +553,12 @@ def check_specification_readiness(state_dir: Path) -> list[str]:
         material = extract_contract_material(requirements_text)
     except ValueError:
         return errors
+
+    errors.extend(validate_capabilities(
+        material.get("capabilities", {}),
+        delivery_assumptions=material.get("delivery_assumptions"),
+    ))
+    errors.extend(validate_workload_envelope(material.get("workload_envelope", {})))
 
     if re.search(r"(?mi)^- not recorded\s*$", requirements_text):
         errors.append("requirements-baseline.md contains '- not recorded'")

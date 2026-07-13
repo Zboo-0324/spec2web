@@ -724,21 +724,28 @@ class ContractStateRevisionTests(unittest.TestCase):
         errors = contract_revision_errors(self.state_dir)
         self.assertTrue(any("task-plan.md" in e for e in errors))
 
-    def test_state_revision_errors_validates_capabilities(self) -> None:
+    def test_contract_revision_errors_excludes_capability_and_workload(self) -> None:
+        """contract_revision_errors reports only revision/digest/staleness, not material completeness."""
+        errors = contract_revision_errors(self.state_dir)
+        self.assertEqual(errors, [])
+
+    def test_specification_readiness_validates_capabilities(self) -> None:
         bad = dict(self.FULL_CONTRACT)
         bad["capabilities"] = {"security": {"status": "maybe"}}
         self._fill_contract(bad)
-        errors = contract_revision_errors(self.state_dir)
-        self.assertTrue(any("status" in e.lower() for e in errors))
+        result = self._run_check("specification")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("status", (result.stdout + result.stderr).lower())
 
-    def test_state_revision_errors_validates_workload(self) -> None:
+    def test_specification_readiness_validates_workload(self) -> None:
         bad = dict(self.FULL_CONTRACT)
         bad["workload_envelope"] = {"task_count": "invalid"}
         self._fill_contract(bad)
-        errors = contract_revision_errors(self.state_dir)
-        self.assertTrue(any("task_count" in e for e in errors))
+        result = self._run_check("specification")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("task_count", result.stdout + result.stderr)
 
-    def test_state_revision_errors_ui_requires_accessibility(self) -> None:
+    def test_specification_readiness_ui_requires_accessibility(self) -> None:
         bad = dict(self.FULL_CONTRACT)
         bad["capabilities"] = dict(self.FULL_CONTRACT["capabilities"])
         bad["capabilities"]["ui"] = {"status": "required", "reason": "browser"}
@@ -747,37 +754,45 @@ class ContractStateRevisionTests(unittest.TestCase):
             "reason": "api only",
         }
         self._fill_contract(bad)
-        errors = contract_revision_errors(self.state_dir)
-        self.assertTrue(any("accessibility" in e.lower() for e in errors))
+        result = self._run_check("specification")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("accessibility", (result.stdout + result.stderr).lower())
 
-    def test_state_revision_errors_not_applicable_needs_reason(self) -> None:
+    def test_specification_readiness_not_applicable_needs_reason(self) -> None:
         bad = dict(self.FULL_CONTRACT)
         bad["capabilities"] = dict(self.FULL_CONTRACT["capabilities"])
         bad["capabilities"]["rbac"] = {"status": "not_applicable"}
         self._fill_contract(bad)
-        errors = contract_revision_errors(self.state_dir)
-        self.assertTrue(any("reason" in e.lower() for e in errors))
+        result = self._run_check("specification")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("reason", (result.stdout + result.stderr).lower())
 
-    def test_state_revision_errors_api_only_not_applicable_with_reason(self) -> None:
+    def test_validate_capabilities_accepts_not_applicable_with_reason(self) -> None:
         """not_applicable with reason is accepted for API-only capabilities."""
-        errors = contract_revision_errors(self.state_dir)
+        caps = dict(self.FULL_CONTRACT["capabilities"])
+        caps["rbac"] = {"status": "not_applicable", "reason": "single role MVP"}
+        errors = validate_capabilities(
+            caps, delivery_assumptions=self.FULL_CONTRACT["delivery_assumptions"]
+        )
         self.assertFalse(any("rbac" in e.lower() for e in errors))
 
-    def test_state_revision_errors_workload_repair_budgets(self) -> None:
+    def test_specification_readiness_workload_repair_budgets(self) -> None:
         bad = dict(self.FULL_CONTRACT)
         bad["workload_envelope"] = dict(self.FULL_CONTRACT["workload_envelope"])
         bad["workload_envelope"]["repair_budgets"] = {"task": 1, "integration": 1}
         self._fill_contract(bad)
-        errors = contract_revision_errors(self.state_dir)
-        self.assertTrue(any("repair_budgets" in e for e in errors))
+        result = self._run_check("specification")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("repair_budgets", result.stdout + result.stderr)
 
-    def test_state_revision_errors_workload_fake_precision_rejected(self) -> None:
+    def test_specification_readiness_workload_fake_precision_rejected(self) -> None:
         bad = dict(self.FULL_CONTRACT)
         bad["workload_envelope"] = dict(self.FULL_CONTRACT["workload_envelope"])
         bad["workload_envelope"]["token_count"] = 1000
         self._fill_contract(bad)
-        errors = contract_revision_errors(self.state_dir)
-        self.assertTrue(any("token_count" in e for e in errors))
+        result = self._run_check("specification")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("token_count", result.stdout + result.stderr)
 
     # --- specification phase ---
 
