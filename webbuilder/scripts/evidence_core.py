@@ -110,6 +110,17 @@ def build_command_manifest(
     }
 
 
+def _validate_identifier(name: str, label: str) -> None:
+    """Reject identifiers that could escape the artifact directory."""
+    if not name or not name.strip():
+        raise ValueError(f"{label} must be a nonempty path component")
+    pure = Path(name).parts
+    if len(pure) != 1 or pure[0] != name:
+        raise ValueError(f"{label} must be a plain path component, got: {name!r}")
+    if name in (".", ".."):
+        raise ValueError(f"{label} must not be '.' or '..'")
+
+
 def capture_command_evidence(
     project_root: Path,
     command: list[str],
@@ -123,6 +134,8 @@ def capture_command_evidence(
 ) -> Path:
     if not command:
         raise ValueError("evidence command must not be empty")
+    _validate_identifier(run_id, "run_id")
+    _validate_identifier(subject_id, "subject_id")
     artifact_root = project_root / ".webbuilder-artifacts"
     artifact_root.mkdir(exist_ok=True)
     ignore_file = artifact_root / ".gitignore"

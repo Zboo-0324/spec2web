@@ -86,6 +86,79 @@ class EvidenceCoreTests(unittest.TestCase):
             self.assertNotEqual(clean, dirty)
 
 
+class IdentifierValidationTests(unittest.TestCase):
+    """run_id / subject_id must be plain path components — no escapes."""
+
+    MALICIOUS_IDS = [
+        ("../escape", "plain"),
+        ("../../deep-escape", "plain"),
+        ("RUN/../../escape", "contains separator"),
+        ("/absolute/path", "absolute path"),
+        (".", "dot"),
+        ("..", "dot-dot"),
+    ]
+
+    def _make_root(self) -> Path:
+        tmp = tempfile.mkdtemp()
+        root = Path(tmp)
+        (root / "src.txt").write_text("ok\n", encoding="utf-8")
+        self.addCleanup(lambda: __import__("shutil").rmtree(tmp, ignore_errors=True))
+        return root
+
+    def test_rejects_malicious_run_id(self) -> None:
+        for bad_id, label in self.MALICIOUS_IDS:
+            with self.subTest(run_id=bad_id, reason=label):
+                root = self._make_root()
+                with self.assertRaises(ValueError, msg=f"run_id={bad_id!r} should be rejected"):
+                    capture_command_evidence(
+                        root, ["echo", "hi"],
+                        run_id=bad_id,
+                        subject_id="TASK-001",
+                        attempt=1,
+                        contract_revision=1,
+                        allowed_paths=["src.txt"],
+                    )
+
+    def test_rejects_malicious_subject_id(self) -> None:
+        for bad_id, label in self.MALICIOUS_IDS:
+            with self.subTest(subject_id=bad_id, reason=label):
+                root = self._make_root()
+                with self.assertRaises(ValueError, msg=f"subject_id={bad_id!r} should be rejected"):
+                    capture_command_evidence(
+                        root, ["echo", "hi"],
+                        run_id="RUN-1",
+                        subject_id=bad_id,
+                        attempt=1,
+                        contract_revision=1,
+                        allowed_paths=["src.txt"],
+                    )
+
+    def test_no_escaped_files_created(self) -> None:
+        """Malicious IDs must not create files outside .webbuilder-artifacts."""
+        for bad_id, label in self.MALICIOUS_IDS:
+            with self.subTest(subject_id=bad_id, reason=label):
+                root = self._make_root()
+                try:
+                    capture_command_evidence(
+                        root, ["echo", "hi"],
+                        run_id="RUN-1",
+                        subject_id=bad_id,
+                        attempt=1,
+                        contract_revision=1,
+                        allowed_paths=["src.txt"],
+                    )
+                except ValueError:
+                    pass
+                artifact_root = root / ".webbuilder-artifacts"
+                if artifact_root.exists():
+                    for child in artifact_root.rglob("*"):
+                        resolved = child.resolve()
+                        self.assertTrue(
+                            resolved.is_relative_to(artifact_root.resolve()),
+                            f"escaped file detected: {resolved}",
+                        )
+
+
 class CommandCaptureTests(unittest.TestCase):
     def test_failed_command_records_output_and_failed_result(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
