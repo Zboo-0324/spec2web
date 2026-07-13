@@ -19,8 +19,13 @@ SKILL_FILE = ROOT / "webbuilder" / "SKILL.md"
 LOOP_ENGINEERING_REFERENCE = ROOT / "webbuilder" / "references" / "loop-engineering.md"
 TASK_BREAKDOWN_REFERENCE = ROOT / "webbuilder" / "references" / "task-breakdown.md"
 STATE_FILES_REFERENCE = ROOT / "webbuilder" / "references" / "state-files.md"
+MULTI_AGENT_ORCHESTRATION_REFERENCE = ROOT / "webbuilder" / "references" / "multi-agent-orchestration.md"
+INTERFACE_DESIGN_REFERENCE = ROOT / "webbuilder" / "references" / "interface-design.md"
+DELIVERY_CHECKLIST_REFERENCE = ROOT / "webbuilder" / "references" / "delivery-checklist.md"
+WORKTREE_MODE_REFERENCE = ROOT / "webbuilder" / "references" / "worktree-mode.md"
 STATE_DIR_NAME = "webbuilder"
 
+from evidence_core import capture_command_evidence  # noqa: E402
 from state_transition import apply_transaction  # noqa: E402
 
 
@@ -885,6 +890,39 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
+            (state_dir / "delivery-report.md").write_text(
+                "# Delivery Report\n\nstatus: complete\n\n## Completed\n\n"
+                "- REQ-001 health endpoint.\n\n## Validation\n\n- Tests passed.\n\n"
+                "## Run Instructions\n\n- python app.py\n\n## Known Risks\n\n- None.\n\n"
+                "## Not Completed\n\n- None.\n",
+                encoding="utf-8",
+            )
+
+            # Create real evidence manifests AFTER all state modifications
+            # so the implementation fingerprint matches the current project state.
+            # Must use the same allowed_paths as task-plan.md (src/health.py).
+            from evidence_core import capture_command_evidence
+
+            project_root = Path(tmp)
+            (project_root / "src").mkdir(exist_ok=True)
+            (project_root / "src" / "health.py").write_text("# health\n", encoding="utf-8")
+            domain_entries = []
+            for domain in ("functional", "security", "performance", "delivery-smoke"):
+                manifest_path = capture_command_evidence(
+                    project_root,
+                    [sys.executable, "-c", "print('ok')"],
+                    run_id="DELIVERY",
+                    subject_id=domain,
+                    attempt=1,
+                    contract_revision=1,
+                    allowed_paths=["src/health.py"],
+                )
+                rel_path = manifest_path.relative_to(project_root).as_posix()
+                domain_entries.append(
+                    f"\n### PROJECT / {domain}\n\n"
+                    f"- artifact_manifest: {rel_path}\n"
+                )
+
             (state_dir / "validation-log.md").write_text(
                 "# Validation Log\n\n## Entries\n\n### TASK-001 / acceptance\n\n"
                 "- gate: acceptance\n- task_status: submitted_for_acceptance\n"
@@ -900,21 +938,7 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                 "- main_workspace_verification: passed\n"
                 "- verification_evidence: python -m unittest\n"
                 "- final_task_status: complete\n"
-                "\n### PROJECT / functional\n\n"
-                "- artifact_manifest: evidence/functional-manifest.json\n"
-                "\n### PROJECT / security\n\n"
-                "- artifact_manifest: evidence/security-manifest.json\n"
-                "\n### PROJECT / performance\n\n"
-                "- artifact_manifest: evidence/performance-manifest.json\n"
-                "\n### PROJECT / delivery-smoke\n\n"
-                "- artifact_manifest: evidence/delivery-smoke-manifest.json\n",
-                encoding="utf-8",
-            )
-            (state_dir / "delivery-report.md").write_text(
-                "# Delivery Report\n\nstatus: complete\n\n## Completed\n\n"
-                "- REQ-001 health endpoint.\n\n## Validation\n\n- Tests passed.\n\n"
-                "## Run Instructions\n\n- python app.py\n\n## Known Risks\n\n- None.\n\n"
-                "## Not Completed\n\n- None.\n",
+                + "".join(domain_entries),
                 encoding="utf-8",
             )
 
@@ -1791,6 +1815,64 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                 text = readme_path.read_text(encoding="utf-8")
                 self.assertIn("approve-contract.py", text)
                 self.assertIn("--phase specification", text)
+
+    def test_skill_routes_to_evidence_and_host_capability_scripts(self) -> None:
+        text = SKILL_FILE.read_text(encoding="utf-8")
+
+        self.assertIn("scripts/capture-evidence.py", text)
+        self.assertIn("scripts/check-host.py", text)
+        self.assertIn("--phase host", text)
+        self.assertIn("--phase initialization", text)
+        self.assertIn("--phase ui", text)
+        self.assertIn(".webbuilder-artifacts/", text)
+
+    def test_skill_documents_authorization_header_redaction_policy(self) -> None:
+        text = SKILL_FILE.read_text(encoding="utf-8")
+
+        self.assertIn("authorization header", text.lower())
+        self.assertIn("redact", text.lower())
+
+    def test_state_files_reference_documents_evidence_artifacts_path(self) -> None:
+        text = STATE_FILES_REFERENCE.read_text(encoding="utf-8")
+
+        self.assertIn(".webbuilder-artifacts/", text)
+        self.assertIn("capture-evidence.py", text)
+
+    def test_multi_agent_orchestration_documents_evidence_capture(self) -> None:
+        text = MULTI_AGENT_ORCHESTRATION_REFERENCE.read_text(encoding="utf-8")
+
+        self.assertIn("capture-evidence.py", text)
+        self.assertIn("check-host.py", text)
+        self.assertIn(".webbuilder-artifacts/", text)
+
+    def test_delivery_checklist_documents_redaction_and_authorization_policy(self) -> None:
+        text = DELIVERY_CHECKLIST_REFERENCE.read_text(encoding="utf-8")
+
+        self.assertIn(".webbuilder-artifacts/", text)
+        self.assertIn("authorization header", text.lower())
+        self.assertIn("redact", text.lower())
+
+    def test_worktree_mode_documents_evidence_promotion(self) -> None:
+        text = WORKTREE_MODE_REFERENCE.read_text(encoding="utf-8")
+
+        self.assertIn(".webbuilder-artifacts/", text)
+        self.assertIn("capture-evidence.py", text)
+
+    def test_interface_design_documents_host_capability_phases(self) -> None:
+        text = INTERFACE_DESIGN_REFERENCE.read_text(encoding="utf-8")
+
+        self.assertIn("--phase host", text)
+        self.assertIn("--phase initialization", text)
+        self.assertIn("--phase ui", text)
+
+    def test_readmes_document_evidence_and_host_capability(self) -> None:
+        for readme_path in (ROOT / "README.md", ROOT / "README_EN.md"):
+            with self.subTest(path=readme_path):
+                text = readme_path.read_text(encoding="utf-8")
+                self.assertIn("capture-evidence.py", text)
+                self.assertIn("check-host.py", text)
+                self.assertIn("--phase host", text)
+                self.assertIn(".webbuilder-artifacts/", text)
 
 
 if __name__ == "__main__":

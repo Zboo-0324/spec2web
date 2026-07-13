@@ -71,6 +71,8 @@ webbuilder/
   scripts/
     init-state.py
     check-state.py
+    check-host.py
+    capture-evidence.py
     migrate-state.py
     transition-state.py
     approve-contract.py
@@ -209,11 +211,29 @@ python webbuilder/scripts/transition-state.py --target . --recover
 python webbuilder/scripts/check-state.py --target . --phase structure
 ```
 
+捕获验证证据：
+
+```powershell
+python webbuilder/scripts/capture-evidence.py --target . --run-id RUN-1 --subject-id TASK-001 --attempt 1 --contract-revision 1 -- python -m unittest
+```
+
+证据存储在 `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` 下，包含 manifest.json 和命令输出。所有证据自动脱敏，包括 Authorization 头、Cookie 和显式密钥。
+
+检查宿主能力：
+
+```powershell
+python webbuilder/scripts/check-host.py --target . --phase host
+python webbuilder/scripts/check-host.py --target . --phase initialization
+python webbuilder/scripts/check-host.py --target . --phase ui
+```
+
 最终交付前，运行交付门禁：
 
 ```powershell
 python webbuilder/scripts/check-state.py --target . --phase delivery
 ```
+
+交付门禁验证每个必要验证域都有有效的证据 manifest，位于 `.webbuilder-artifacts/` 下。
 
 检查脚本提供八个阶段：
 

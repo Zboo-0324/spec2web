@@ -489,6 +489,29 @@ status: draft
 - List intentional omissions or blockers.
 ```
 
+## Evidence Artifacts
+
+Evidence manifests are stored under `.webbuilder-artifacts/` in the project root:
+
+```text
+.webbuilder-artifacts/
+  <run-id>/
+    <subject-id>/
+      <attempt>/
+        manifest.json
+        command-output.txt
+```
+
+Use `capture-evidence.py` to capture verification evidence:
+
+```text
+python <skill-root>/scripts/capture-evidence.py --target <project-root> --run-id <RUN-ID> --subject-id <TASK-ID> --attempt <N> --contract-revision <REV> -- <command>
+```
+
+Each manifest records the command, exit code, cwd, implementation fingerprint (git SHA-256), artifact hashes, tool versions, redaction status, and result. All paths are project-relative. Workers capture evidence in their worktree; the Orchestrator promotes it to the main workspace before integration.
+
+The delivery gate requires valid manifests for each verification domain. See `delivery-checklist.md` for the required domains.
+
 ## Phase Checks
 
 For existing V1 state, migrate before checking:

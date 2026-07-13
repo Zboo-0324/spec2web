@@ -73,6 +73,22 @@ Write this section into `webbuilder/system-design.md` before frontend task break
 - If a design choice changes scope or brand direction, ask the user before building.
 - Interface decisions that change `ui_direction`, `page_navigation_summary`, or `primary_workflows` in the contract material are material changes and invalidate contract approval.
 
+## Host Capability for UI
+
+When the contract marks `ui` as `required`, verify the host can render and test browser-based UI before dispatching frontend tasks:
+
+```text
+python <skill-root>/scripts/check-host.py --target <project-root> --phase host
+python <skill-root>/scripts/check-host.py --target <project-root> --phase initialization
+python <skill-root>/scripts/check-host.py --target <project-root> --phase ui
+```
+
+- `--phase host` checks that all required capabilities have available evidence.
+- `--phase initialization` checks required capabilities have evidence while allowing `not_applicable` capabilities to skip.
+- `--phase ui` checks that UI-specific evidence manifests exist when the contract requires a UI.
+
+Record browser and rendering capability in `loop-state.md` under `## Host Capabilities`.
+
 ## Task Breakdown Impact
 
 Create frontend tasks as vertical slices around user flows when possible. Each frontend task should include:
