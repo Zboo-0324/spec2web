@@ -161,7 +161,7 @@ VALID_CHECKER_STRATEGIES = {
 }
 VALID_ACTIVE_CHECKER_STRATEGIES = VALID_CHECKER_STRATEGIES | {"mixed"}
 VALID_USER_APPROVALS = {"not_required", "required", "approved"}
-VALID_DELIVERY_MODES = {"guided"}
+VALID_DELIVERY_MODES = {"guided", "autonomous"}
 VALID_AUTONOMY_SCOPES = {"unconfirmed", "confirmed_plan"}
 VALID_STOP_REASONS = {
     "none",
