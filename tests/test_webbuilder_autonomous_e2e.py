@@ -2711,5 +2711,42 @@ class FullDeliveryLifecycleTests(DeliveryLifecycleHelpers, unittest.TestCase):
                 )
 
 
+class DeliveryExitGateReferenceTests(unittest.TestCase):
+    """Verify the Plan 4 delivery exit gate against the checked-in autonomous reference.
+
+    This is a TDD RED test: the autonomous-reference example does not yet
+    carry a ``webbuilder/`` state directory, so
+    ``check-state.py --target examples/autonomous-reference --phase delivery``
+    reports a missing state directory and exits nonzero.
+
+    Once the autonomous-reference example is provisioned with a complete
+    delivery state, this test will pass (returncode 0).
+    """
+
+    CHECK_SCRIPT = ROOT / "webbuilder" / "scripts" / "check-state.py"
+
+    def test_delivery_exit_gate_passes_on_checked_in_reference(self) -> None:
+        """check-state.py --target examples/autonomous-reference --phase delivery must exit 0."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(self.CHECK_SCRIPT),
+                "--target",
+                str(AUTONOMOUS_DIR),
+                "--phase",
+                "delivery",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            self.fail(
+                f"check-state.py --phase delivery on checked-in autonomous-reference "
+                f"exited {result.returncode}.\n"
+                f"stdout:\n{result.stdout}\n"
+                f"stderr:\n{result.stderr}"
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
