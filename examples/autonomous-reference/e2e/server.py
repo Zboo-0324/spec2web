@@ -7,6 +7,7 @@ terminates the child process.
 
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import sys
@@ -21,6 +22,44 @@ def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return sock.getsockname()[1]
+
+
+def _bootstrap_database(project_root: Path) -> None:
+    """Run migrations and ensure the deterministic E2E reviewer account.
+
+    This is idempotent: calling it on an already-migrated database is a
+    no-op, and creating the reviewer user is skipped when it already
+    exists.
+    """
+    manage_py = str(project_root / "manage.py")
+
+    # Run Django migrations to create / update the schema.
+    subprocess.check_call(
+        [sys.executable, manage_py, "migrate", "--run-syncdb"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    # Seed the deterministic browser-E2E account via a management script
+    # executed in-process so we don't need a separate command.
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+    import django
+
+    django.setup()
+    from django.contrib.auth.models import User
+
+    if not User.objects.filter(username="reviewer").exists():
+        User.objects.create_user(
+            username="reviewer",
+            password="review-pass",
+            email="reviewer@example.com",
+        )
+
+    # Close all database connections so the SQLite file is not held open
+    # (required on Windows where file locks prevent cleanup/teardown).
+    from django.db import connections
+
+    connections.close_all()
 
 
 class LiveServer:
@@ -44,7 +83,10 @@ class LiveServer:
         self._port = _free_port()
         self._url = f"http://127.0.0.1:{self._port}"
 
-        manage_py = str(Path(__file__).resolve().parent.parent / "manage.py")
+        project_root = Path(__file__).resolve().parent.parent
+        _bootstrap_database(project_root)
+
+        manage_py = str(project_root / "manage.py")
         self._process = subprocess.Popen(
             [
                 sys.executable,
