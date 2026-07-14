@@ -1,6 +1,6 @@
 # Adaptive Multi-Agent Orchestration
 
-Spec2Web uses host-provided agents adaptively. It remains a state-file workflow, not a background scheduler, worker pool, or autonomous merge service.
+WebBuilder uses host-provided agents adaptively. It remains a state-file workflow, not a background scheduler, worker pool, or autonomous merge service.
 
 ## Contents
 
@@ -133,6 +133,29 @@ Give each worker only:
 - stop conditions and repair budget.
 
 Workers submit and stop. They do not integrate, expand scope, spawn unplanned workers, or decide completion.
+
+## Evidence Capture
+
+Workers capture verification evidence using `capture-evidence.py` in their task worktree:
+
+```text
+python <skill-root>/scripts/capture-evidence.py --target <project-root> --run <RUN-ID> --subject <TASK-ID> --attempt <N> --contract-revision <REV> -- <command>
+```
+
+Evidence is stored under `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` with project-relative paths. The manifest records the command, exit code, implementation fingerprint, artifact hashes, redaction status, and result.
+
+Before integration, the Orchestrator promotes evidence from the worker worktree to the main workspace. Promotion copies artifacts and rewrites paths to remain project-relative. If the source manifest was tampered or the destination already exists with divergent content, promotion rejects the write.
+
+Host capability evidence is inspected with `check-host.py` and validated with `check-state.py`:
+
+```text
+python <skill-root>/scripts/check-host.py --target <project-root>
+python <skill-root>/scripts/check-state.py --target <project-root> --phase host
+python <skill-root>/scripts/check-state.py --target <project-root> --phase initialization
+python <skill-root>/scripts/check-state.py --target <project-root> --phase ui
+```
+
+Record host capabilities in the `## Host Capabilities` section of `loop-state.md`. All evidence output is automatically redacted for authorization headers, cookies, and secret-bearing assignment patterns.
 
 ## Integration Queue
 

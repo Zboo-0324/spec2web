@@ -158,6 +158,23 @@ Use `integration_commit` sparingly. It is for Orchestrator-owned reconciliation 
 - Failed verification enters repair or blocked state.
 - Task repair counters and integration repair counters are separate: record task failures against `task_repair_attempt` and its fingerprint fields, and post-acceptance failures against `integration_repair_attempt` and its fingerprint fields.
 
+## Evidence Promotion
+
+Workers capture evidence in their worktree using `capture-evidence.py`:
+
+```text
+python <skill-root>/scripts/capture-evidence.py --target <worktree-path> --run <RUN-ID> --subject <TASK-ID> --attempt <N> --contract-revision <REV> -- <command>
+```
+
+Evidence is stored under `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` with project-relative paths. Before worktree cleanup, the Orchestrator promotes evidence to the main workspace:
+
+- copies artifact files to the main workspace's `.webbuilder-artifacts/` directory
+- rewrites manifest paths to remain project-relative
+- records `promoted_from` in the promoted manifest
+- rejects promotion if source artifacts were tampered or destination has divergent content
+
+The promoted evidence path is recorded in `validation-log.md` and referenced by the delivery gate. Do not clean up the worktree until evidence promotion succeeds.
+
 ## Naming
 
 Use predictable names:

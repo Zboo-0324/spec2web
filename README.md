@@ -16,11 +16,11 @@
 
 WebBuilder 是一个轻量级 Skill，用来指导 AI 编程智能体完成全栈 Web 项目的交付流程。
 
-它不是运行时、代码生成器、MCP Server、后台调度器或项目模板。Spec2Web 的重点是给智能体一套可恢复、可审查、可验证的工作流，让它从需求出发，逐步完成设计、拆解、开发、验证、修复和交付，同时保持方向、边界和项目记忆。
+它不是运行时、代码生成器、MCP Server、后台调度器或项目模板。WebBuilder 的重点是给智能体一套可恢复、可审查、可验证的工作流，让它从需求出发，逐步完成设计、拆解、开发、验证、修复和交付，同时保持方向、边界和项目记忆。
 
 ## 它能做什么
 
-Spec2Web 会帮助智能体：
+WebBuilder 会帮助智能体：
 
 - 在实现前读取项目规则
 - 建立需求基线
@@ -38,7 +38,7 @@ Spec2Web 会帮助智能体：
 
 ## 它不做什么
 
-Spec2Web 不会：
+WebBuilder 不会：
 
 - 根据一句提示生成完整应用
 - 提供全栈代码模板
@@ -49,6 +49,10 @@ Spec2Web 不会：
 - 自动部署应用
 - 替代用户对高影响决策的确认
 
+## 详细文档
+
+完整的产品说明、使用指南、命令参考和故障排查请参阅 [WebBuilder 产品与使用指南](./webbuilder/references/project-results-and-usage.md)。
+
 ## 仓库结构
 
 ```text
@@ -57,6 +61,7 @@ webbuilder/
   agents/
     openai.yaml
   references/
+    project-results-and-usage.md
     delivery-checklist.md
     install.md
     interface-design.md
@@ -71,10 +76,16 @@ webbuilder/
   scripts/
     init-state.py
     check-state.py
+    check-host.py
+    capture-evidence.py
     migrate-state.py
     transition-state.py
     approve-contract.py
     contract_core.py
+    evidence_core.py
+    host_capabilities.py
+    state_schema.py
+    state_transition.py
 ```
 
 ## 安装
@@ -128,23 +139,26 @@ robocopy $src $dst /MIR
 
 ## 使用方式
 
-当你希望启用 Spec2Web 工作流时，显式调用它：
+当你希望启用 WebBuilder 工作流时，显式调用它：
 
 ```text
 /webbuilder initialize this project
 /webbuilder enable workflow
 /webbuilder start from requirements.md
+/webbuilder start autonomous from requirements.md
 /webbuilder continue current task
 /webbuilder show status
 /webbuilder generate delivery report
 ```
 
+自主模式需要显式选择；引导模式是所有新项目和已有项目的默认模式。
+
 也可以用自然语言：
 
 ```text
-use Spec2Web for this project
-start Spec2Web mode
-resume Spec2Web
+use WebBuilder for this project
+start WebBuilder mode
+resume WebBuilder
 ```
 
 WebBuilder 不应该自动接管普通编码任务。只有当用户显式要求，或项目中存在 active 的 `webbuilder/loop-state.md` 时，它才持续约束后续全栈开发工作。
@@ -209,13 +223,35 @@ python webbuilder/scripts/transition-state.py --target . --recover
 python webbuilder/scripts/check-state.py --target . --phase structure
 ```
 
+捕获验证证据：
+
+```powershell
+python webbuilder/scripts/capture-evidence.py --target . --run RUN-1 --subject TASK-001 --attempt 1 --contract-revision 1 -- python -m unittest
+```
+
+证据存储在 `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` 下，包含 manifest.json 和命令输出。所有证据自动脱敏，包括 Authorization 头、Cookie 和含密钥的赋值模式。
+
+检查宿主能力并验证就绪性：
+
+```powershell
+python webbuilder/scripts/check-host.py --target .
+python webbuilder/scripts/check-state.py --target . --phase host
+python webbuilder/scripts/check-state.py --target . --phase initialization
+python webbuilder/scripts/check-state.py --target . --phase ui
+```
+
+`check-host.py --target .` 检查并记录宿主能力报告。
+就绪性门禁由 `check-state.py` 的 `--phase host`、`--phase initialization` 和 `--phase ui` 运行。
+
 最终交付前，运行交付门禁：
 
 ```powershell
 python webbuilder/scripts/check-state.py --target . --phase delivery
 ```
 
-检查脚本提供八个阶段：
+交付门禁验证每个必要验证域都有有效的证据 manifest，位于 `.webbuilder-artifacts/` 下。
+
+检查脚本提供十一个阶段：
 
 - `structure`：schema、必要文件、智能体编排元数据、设计章节、任务契约和状态取值
 - `specification`：完整合约材料、无 `not recorded` 值、非空验收信号和工作流、系统设计与任务计划引用当前合约修订
@@ -225,8 +261,11 @@ python webbuilder/scripts/check-state.py --target . --phase delivery
 - `acceptance`：逐任务提交包、身份独立性、对抗性案例、分歧和 critical 控制证据
 - `integration`：已验收任务、集成策略与提交、主工作区复验证据
 - `delivery`：全部任务的验收和集成证据闭环、交付报告完成和终态工作流
+- `host`：合约中标记为 `required` 的宿主能力已可用且有证据
+- `initialization`：宿主能力满足已批准合约，`not_applicable` 能力可跳过
+- `ui`：合约声明 `ui` 为 `required` 时，验证 UI 证据 manifest 存在
 
-旧版本状态文件不会被初始化脚本覆盖。schema 1.4 新增引导交付与恢复元数据（`delivery_mode`、`autonomy_scope`、`stop_reason`、`resume_checkpoint`、`active_run_id`、`state_revision`、`pending_transition`）。迁移会保留内容并将 V1 到 V1.3 状态升级；缺少风险依据的任务会被标记为 `unclassified`，必须由 Planner 显式补充分类后才能执行。
+初始化脚本不会覆盖已有状态文件。schema 1.4 包含引导交付与恢复元数据（`delivery_mode`、`autonomy_scope`、`stop_reason`、`resume_checkpoint`、`active_run_id`、`state_revision`、`pending_transition`）。迁移保留内容并将 V1 到 V1.3 状态升级到当前 schema；缺少风险依据的任务会被标记为 `unclassified`，必须由 Planner 显式补充分类后才能执行。
 
 `loop-state.md` 是规范的 State Kernel 记录。智能体可以编辑描述性内容并提交证据，但不得手动设置审批、就绪、验收、集成、停止/恢复或交付成功值。状态变更会在 `webbuilder/.transitions/` 下写入事务日志；恢复只会完成未发生分歧的待处理事务。
 
@@ -274,7 +313,7 @@ Read State
 
 ## PR/Worktree 模式
 
-Spec2Web 对 Git 项目中的委派或并行任务使用 PR/worktree 交接：
+WebBuilder 对 Git 项目中的委派或并行任务使用 PR/worktree 交接：
 
 - 默认一次执行一个任务
 - 受控多 worker 模式只允许无冲突任务批次
@@ -286,9 +325,9 @@ Spec2Web 对 Git 项目中的委派或并行任务使用 PR/worktree 交接：
 - 每次集成后都需要在主工作区重新验证
 - 清理 worktree 前，必须将已接受的证据复制到规范状态和 `validation-log.md`
 
-Spec2Web 不提供自动 worker 池，也不提供无人值守的批量集成调度器。
+WebBuilder 不提供自动 worker 池，也不提供无人值守的批量集成调度器。
 
-Spec2Web 允许使用当前 Codex 宿主提供的本地或 Codex 云端智能体；未经用户明确授权，不调用第三方 AI 服务或外部智能体产品。
+WebBuilder 允许使用当前 Codex 宿主提供的本地或 Codex 云端智能体；未经用户明确授权，不调用第三方 AI 服务或外部智能体产品。
 
 对于非 Git 项目或明确采用单会话回退的任务，使用 `handoff_mode: single_session` 和 `integration_strategy: direct_apply`；它表示改动已在主工作区中，由 Orchestrator 验收并完成主工作区验证，不虚构 merge 或 commit。
 
@@ -297,7 +336,7 @@ Spec2Web 允许使用当前 Codex 宿主提供的本地或 Codex 云端智能体
 运行状态脚本 smoke check：
 
 ```powershell
-$tmp = Join-Path $env:TEMP "spec2web-smoke"
+$tmp = Join-Path $env:TEMP "webbuilder-smoke"
 Remove-Item -Recurse -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 python webbuilder/scripts/init-state.py --target $tmp
@@ -310,7 +349,15 @@ python webbuilder/scripts/check-state.py --target $tmp --phase structure
 python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" webbuilder
 ```
 
-## 设计原则
+## Golden 技术配置文件
+
+WebBuilder 维护经过验证的技术栈配置文件，用于推荐和启动项目：
+
+```text
+webbuilder/references/technology-profiles/django-5.2-lts.md
+```
+
+Django 5.2 LTS Golden Profile 包含经过验证的 Python/Django/Playwright 版本组合和启动说明。
 
 - 保持轻量。
 - 用显式状态文件作为项目记忆。

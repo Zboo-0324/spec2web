@@ -16,11 +16,11 @@ Requirements baseline · Technology strategy · Interface design · Task breakdo
 
 WebBuilder is a lightweight Skill for guiding AI coding agents through full-stack web project delivery.
 
-It is intentionally not a runtime, code generator, MCP server, background scheduler, or framework template. Instead, Spec2Web gives an agent a stateful workflow for moving from requirements to implementation, validation, repair, and delivery while keeping scope, quality, and project memory explicit.
+It is intentionally not a runtime, code generator, MCP server, background scheduler, or framework template. Instead, WebBuilder gives an agent a stateful workflow for moving from requirements to implementation, validation, repair, and delivery while keeping scope, quality, and project memory explicit.
 
 ## What It Does
 
-Spec2Web helps an agent:
+WebBuilder helps an agent:
 
 - read project rules before implementation
 - establish a requirements baseline
@@ -38,7 +38,7 @@ Spec2Web helps an agent:
 
 ## What It Does Not Do
 
-Spec2Web does not:
+WebBuilder does not:
 
 - generate an application from a prompt
 - provide a full-stack code template
@@ -49,6 +49,10 @@ Spec2Web does not:
 - deploy applications
 - replace user confirmation for high-impact decisions
 
+## Detailed Documentation
+
+The complete product guide, usage instructions, command reference, and troubleshooting are available in the [WebBuilder Product and Usage Guide](./webbuilder/references/project-results-and-usage.md) (Chinese).
+
 ## Repository Layout
 
 ```text
@@ -57,6 +61,7 @@ webbuilder/
   agents/
     openai.yaml
   references/
+    project-results-and-usage.md
     delivery-checklist.md
     install.md
     interface-design.md
@@ -71,10 +76,16 @@ webbuilder/
   scripts/
     init-state.py
     check-state.py
+    check-host.py
+    capture-evidence.py
     migrate-state.py
     transition-state.py
     approve-contract.py
     contract_core.py
+    evidence_core.py
+    host_capabilities.py
+    state_schema.py
+    state_transition.py
 ```
 
 ## Install
@@ -128,23 +139,26 @@ Restart Hermes after installation.
 
 ## Usage
 
-Use Spec2Web explicitly when you want the workflow active:
+Use WebBuilder explicitly when you want the workflow active:
 
 ```text
 /webbuilder initialize this project
 /webbuilder enable workflow
 /webbuilder start from requirements.md
+/webbuilder start autonomous from requirements.md
 /webbuilder continue current task
 /webbuilder show status
 /webbuilder generate delivery report
 ```
 
+Autonomous mode requires explicit opt-in; guided mode is the default for all new and existing projects.
+
 Natural-language equivalents also work:
 
 ```text
-use Spec2Web for this project
-start Spec2Web mode
-resume Spec2Web
+use WebBuilder for this project
+start WebBuilder mode
+resume WebBuilder
 ```
 
 WebBuilder should not take over ordinary coding tasks unless it has been explicitly requested or the project has an active `webbuilder/loop-state.md`.
@@ -209,13 +223,35 @@ python webbuilder/scripts/transition-state.py --target . --recover
 python webbuilder/scripts/check-state.py --target . --phase structure
 ```
 
+Capture verification evidence:
+
+```powershell
+python webbuilder/scripts/capture-evidence.py --target . --run RUN-1 --subject TASK-001 --attempt 1 --contract-revision 1 -- python -m unittest
+```
+
+Evidence is stored under `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` with manifest.json and command output. All evidence is automatically redacted for authorization headers, cookies, and secret-bearing assignment patterns.
+
+Inspect host capabilities and validate readiness:
+
+```powershell
+python webbuilder/scripts/check-host.py --target .
+python webbuilder/scripts/check-state.py --target . --phase host
+python webbuilder/scripts/check-state.py --target . --phase initialization
+python webbuilder/scripts/check-state.py --target . --phase ui
+```
+
+`check-host.py --target .` inspects and records the host capability report.
+The three readiness gates are run by `check-state.py` with `--phase host`, `--phase initialization`, and `--phase ui`.
+
 Before final delivery, run the delivery gate:
 
 ```powershell
 python webbuilder/scripts/check-state.py --target . --phase delivery
 ```
 
-The checker has eight validation phases:
+The delivery gate verifies that valid evidence manifests exist under `.webbuilder-artifacts/` for every required verification domain.
+
+The checker has eleven validation phases:
 
 - `structure`: schema, required files, agent-orchestration metadata, design sections, task contracts, and valid status values
 - `specification`: complete contract material with no `not recorded` values, non-empty acceptance signals and primary workflows, and derived documents referencing the current contract revision
@@ -225,8 +261,11 @@ The checker has eight validation phases:
 - `acceptance`: per-task submission package, independent identities, adversarial cases, disagreements, and critical controls
 - `integration`: accepted task, matching integration strategy and commit, and main-workspace verification evidence
 - `delivery`: acceptance and integration evidence closure for every completed task, a complete delivery report, and terminal workflow state
+- `host`: validates required host capabilities are available with evidence
+- `initialization`: validates host capabilities satisfy the approved contract; not_applicable capabilities may lack evidence
+- `ui`: validates UI evidence manifests exist when the contract declares UI as required
 
-The initializer does not overwrite older state files. Schema 1.4 adds guided delivery and recovery metadata (`delivery_mode`, `autonomy_scope`, `stop_reason`, `resume_checkpoint`, `active_run_id`, `state_revision`, and `pending_transition`). Migration preserves content and brings V1 through V1.3 state forward; tasks without a documented risk basis become `unclassified` and must be explicitly classified before dispatch.
+The initializer does not overwrite existing state files. Schema 1.4 includes guided delivery and recovery metadata (`delivery_mode`, `autonomy_scope`, `stop_reason`, `resume_checkpoint`, `active_run_id`, `state_revision`, and `pending_transition`). Migration preserves content and upgrades V1 through V1.3 state to the current schema; tasks without a documented risk basis become `unclassified` and must be explicitly classified before dispatch.
 
 `loop-state.md` is the canonical State Kernel record. Agents may edit descriptive content and submit evidence, but must not manually set approval, readiness, acceptance, integration, stop/resume, or delivery-success values. State-changing operations use a transaction journal under `webbuilder/.transitions/`; recovery completes only a non-divergent pending transition.
 
@@ -274,7 +313,7 @@ Application code starts only after `project-rules.md`, `system-design.md`, and `
 
 ## PR/Worktree Mode
 
-Spec2Web uses PR/worktree handoff for delegated or parallel tasks in Git projects:
+WebBuilder uses PR/worktree handoff for delegated or parallel tasks in Git projects:
 
 - default: one task at a time
 - controlled multi-worker mode: only for no-conflict task batches
@@ -286,9 +325,9 @@ Spec2Web uses PR/worktree handoff for delegated or parallel tasks in Git project
 - verification runs in the main workspace after each integration
 - accepted evidence is copied to canonical state and `validation-log.md` before its worktree is cleaned up
 
-Spec2Web does not provide an automatic worker pool or unattended integration scheduler.
+WebBuilder does not provide an automatic worker pool or unattended integration scheduler.
 
-Spec2Web permits agents exposed by the current Codex host, including host-authorized local or Codex cloud execution. It does not call third-party AI services or external agent products without explicit user authorization.
+WebBuilder permits agents exposed by the current Codex host, including host-authorized local or Codex cloud execution. It does not call third-party AI services or external agent products without explicit user authorization.
 
 For non-Git projects or explicit single-session fallback, use `handoff_mode: single_session` with `integration_strategy: direct_apply`. This records that accepted changes already exist in the main workspace and require Orchestrator verification without inventing a merge or commit.
 
@@ -297,7 +336,7 @@ For non-Git projects or explicit single-session fallback, use `handoff_mode: sin
 Run a state script smoke check:
 
 ```powershell
-$tmp = Join-Path $env:TEMP "spec2web-smoke"
+$tmp = Join-Path $env:TEMP "webbuilder-smoke"
 Remove-Item -Recurse -Force -LiteralPath $tmp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 python webbuilder/scripts/init-state.py --target $tmp
@@ -310,7 +349,15 @@ Validate the Skill package:
 python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" webbuilder
 ```
 
-## Design Principles
+## Golden Technology Profiles
+
+WebBuilder maintains validated technology stack profiles for recommendation and project bootstrapping:
+
+```text
+webbuilder/references/technology-profiles/django-5.2-lts.md
+```
+
+The Django 5.2 LTS Golden Profile includes verified Python/Django/Playwright version combinations and startup instructions.
 
 - Keep the workflow lightweight.
 - Use explicit state files as project memory.

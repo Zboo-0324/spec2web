@@ -14,6 +14,7 @@ Use this Skill when the user explicitly asks to initialize, enable, start, resum
 - `/webbuilder initialize this project`
 - `/webbuilder enable workflow`
 - `/webbuilder start from requirements.md`
+- `/webbuilder start autonomous from requirements.md`
 - `/webbuilder continue current task`
 - `/webbuilder show status`
 - `/webbuilder generate delivery report`
@@ -23,6 +24,8 @@ Use this Skill when the user explicitly asks to initialize, enable, start, resum
 If the current project contains `webbuilder/loop-state.md` with `status: active`, continue to use this Skill for full-stack project work. If the workflow is not initialized and the user asks for an ordinary coding task, do not take over the task automatically.
 
 For localized invocation examples and install paths, read `references/install.md`.
+
+For detailed product documentation, usage guide, command reference, and troubleshooting, read `references/project-results-and-usage.md`.
 
 ## Initialization
 
@@ -57,6 +60,14 @@ python <skill-root>/scripts/check-state.py --target <project-root> --phase struc
 ```
 
 Recovery completes the one journaled transition when its files are still at known original or target contents. If it reports divergent state, stop for manual inspection; do not edit around the journal.
+
+After recovery succeeds, resume the workflow:
+
+```text
+python <skill-root>/scripts/transition-state.py --target <project-root> --resume
+```
+
+The `--resume` event clears `resume_checkpoint` (sets it to `none`) and `stop_reason` in `loop-state.md`, and sets `status` to `active`. Use it when the user explicitly resumes after a declared stop condition was resolved.
 
 ## Hard Gates
 
@@ -302,7 +313,7 @@ For interface planning rules and templates, read `references/interface-design.md
 
 ## Loop Engineering Model
 
-Spec2Web owns the loop. The agent must repeatedly read state, select bounded work, execute, verify, review, repair or record, and update state. For the full protocol, read `references/loop-engineering.md`.
+WebBuilder owns the loop. The agent must repeatedly read state, select bounded work, execute, verify, review, repair or record, and update state. For the full protocol, read `references/loop-engineering.md`.
 
 ## Task Breakdown
 
@@ -429,11 +440,53 @@ Use the other helpers when available:
 - debugging and repair: `superpowers:systematic-debugging`
 - completion claims: `superpowers:verification-before-completion`
 
-All outputs from external Skills must be written back to Spec2Web state files. External Skills may not skip requirements baseline, task breakdown, validation logging, or delivery reporting.
+All outputs from external Skills must be written back to WebBuilder state files. External Skills may not skip requirements baseline, task breakdown, validation logging, or delivery reporting.
+
+## Evidence Capture
+
+Before integration and delivery, capture machine-verifiable evidence of verification commands:
+
+```text
+python <skill-root>/scripts/capture-evidence.py --target <project-root> --run <RUN-ID> --subject <TASK-ID> --attempt <N> --contract-revision <REV> -- <command>
+```
+
+Evidence manifests are stored under `.webbuilder-artifacts/<run-id>/<subject-id>/<attempt>/` with relative project paths. Each manifest records the command, exit code, implementation fingerprint, artifact hashes, and redaction status.
+
+Workers capture evidence in their task worktree. Orchestrator promotes evidence to the main workspace before integration using the `promote_artifacts` function, which copies artifacts and rewrites paths to be project-relative.
+
+## Redaction Policy
+
+All captured evidence is automatically redacted before writing. The redactor strips authorization headers, Cookie headers, and secret-bearing assignment patterns from command output. The manifest always records `redaction.status: passed` after applying built-in redaction. The delivery gate accepts only manifests whose `redaction.status` is `passed` and rejects any other status.
+
+Authorization header values (Bearer tokens, Basic credentials, API keys in headers) are always redacted.
+
+## Host Capability Check
+
+Before dispatching tasks that require specific host capabilities (UI, database, docker, etc.), inspect and validate them:
+
+```text
+python <skill-root>/scripts/check-host.py --target <project-root>
+python <skill-root>/scripts/check-state.py --target <project-root> --phase host
+python <skill-root>/scripts/check-state.py --target <project-root> --phase initialization
+python <skill-root>/scripts/check-state.py --target <project-root> --phase ui
+```
+
+- `check-host.py --target <project-root>` inspects and records the host capability report.
+- `--phase host` validates that all capabilities marked `required` in the contract have `available` status with evidence in `loop-state.md`.
+- `--phase initialization` validates that required capabilities have evidence but allows `not_applicable` capabilities to lack evidence.
+- `--phase ui` validates that UI-specific evidence manifests exist when the contract declares `ui` as `required`.
+
+Record host capability evidence in the `## Host Capabilities` section of `loop-state.md` as a JSON block with status and evidence for each capability.
+
+## Manifest-Backed Final Delivery
+
+The delivery gate now verifies that every required verification domain has a valid evidence manifest. Handwritten "passed" text in `validation-log.md` is not sufficient; each delivery domain (`functional`, `security`, `performance`, `delivery-smoke`, and `ui`/`accessibility` when applicable) must have a `PROJECT / <domain>` entry referencing an `artifact_manifest` path under `.webbuilder-artifacts/`.
+
+The delivery gate verifies each manifest: artifact hashes must match, the contract revision must be current, the implementation fingerprint must match, redaction must have passed, and the result must be `passed`.
 
 ## Delivery
 
-Before final delivery, run the project-specific verification commands, update `validation-log.md`, generate `delivery-report.md`, mark its status `complete`, set terminal workflow state, and run:
+Before final delivery, run the project-specific verification commands, capture evidence, update `validation-log.md`, generate `delivery-report.md`, mark its status `complete`, set terminal workflow state, and run:
 
 ```text
 python <skill-root>/scripts/check-state.py --target <project-root> --phase delivery

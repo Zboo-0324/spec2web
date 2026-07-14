@@ -45,6 +45,12 @@ Use the dynamic slash command when available:
 /webbuilder 生成交付报告
 ```
 
+Autonomous mode requires explicit opt-in. Guided mode is the default for all projects:
+
+```text
+/webbuilder start autonomous from requirements.md
+```
+
 Equivalent natural-language requests are also valid:
 
 ```text
@@ -56,7 +62,7 @@ resume WebBuilder
 
 ## Optional Project Hook
 
-Add this to `CLAUDE.md` or `AGENTS.md` only when the project should keep using Spec2Web after initialization:
+Add this to `CLAUDE.md` or `AGENTS.md` only when the project should keep using WebBuilder after initialization:
 
 ```text
 Use the webbuilder Skill only when explicitly requested or when webbuilder/loop-state.md exists with status active. Do not let it override ordinary coding tasks when the workflow has not been initialized.

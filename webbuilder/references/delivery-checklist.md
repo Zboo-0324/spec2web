@@ -19,12 +19,40 @@ Before final delivery, verify and record evidence.
 - `delivery-report.md` has `status: complete`
 - `loop-state.md` has `current_phase: delivery` and `status: delivered`
 - the delivery-phase state check passes
+- `stop_reason` is `none` for delivery
+- evidence manifests exist under `.webbuilder-artifacts/` for every required verification domain
+- host capability evidence is recorded for `required` capabilities in `loop-state.md`
+- each manifest passes hash, contract-revision, fingerprint, and redaction verification
 
 Run the bundled checker from the Skill directory:
 
 ```text
 python <skill-root>/scripts/check-state.py --target <project-root> --phase delivery
 ```
+
+## Evidence Manifest Requirements
+
+Each delivery domain (`functional`, `security`, `performance`, `delivery-smoke`, and `ui`/`accessibility` when applicable) requires a `PROJECT / <domain>` entry in `validation-log.md` referencing an `artifact_manifest` path.
+
+The delivery gate verifies each manifest:
+
+- artifact file hashes match the recorded values
+- contract revision matches the current approval
+- implementation fingerprint matches
+- redaction status is `passed`
+- result is `passed`
+
+Capture evidence with:
+
+```text
+python <skill-root>/scripts/capture-evidence.py --target <project-root> --run DELIVERY --subject <domain> --attempt 1 --contract-revision <REV> -- <command>
+```
+
+## Redaction Policy
+
+All captured evidence is automatically redacted. The redactor strips authorization headers (Bearer tokens, Basic credentials), Cookie headers, and secret-bearing assignment patterns. The manifest always records `redaction.status: passed` after applying built-in redaction. The delivery gate accepts only manifests whose `redaction.status` is `passed` and rejects any other status.
+
+Authorization header values are always redacted.
 
 ## Delivery Report Template
 
