@@ -1539,7 +1539,7 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(repeated.returncode, 0, repeated.stdout + repeated.stderr)
-            self.assertIn("Spec2Web state already uses schema 1.4", repeated.stdout)
+            self.assertIn("WebBuilder state already uses schema 1.4", repeated.stdout)
             self.assertEqual(len(list(state_dir.glob(".migration-backup-*"))), 1)
 
     def test_migrate_state_upgrades_v13_runtime_fields_transactionally(self) -> None:
@@ -1608,7 +1608,7 @@ class Spec2WebStateScriptTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(repeated.returncode, 0, repeated.stdout + repeated.stderr)
-            self.assertIn("Spec2Web state already uses schema 1.4", repeated.stdout)
+            self.assertIn("WebBuilder state already uses schema 1.4", repeated.stdout)
             self.assertEqual(len(list(state_dir.glob(".migration-backup-*"))), 1)
 
     def test_migrate_state_reports_missing_required_file(self) -> None:
@@ -1654,7 +1654,7 @@ class Spec2WebStateScriptTests(unittest.TestCase):
             self.assertIn("execution_mode: delegated", loop_state)
             self.assertIn("available_child_slots: 4", loop_state)
             self.assertIn("selected_workers: 1", loop_state)
-            self.assertIn("Spec2Web state already uses schema 1.4", result.stdout)
+            self.assertIn("WebBuilder state already uses schema 1.4", result.stdout)
 
     def test_migrate_state_rejects_unknown_explicit_version(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
